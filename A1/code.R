@@ -45,15 +45,14 @@ df <- df[!names(df) %in% c("sex")]
 #3 - Duplicació de codis
 without.duplicated.cs <- df %>% distinct(CS_ID, .keep_all = TRUE)
 duplicates <- df[duplicated(df$CS_ID),]
-a<-strsplit(duplicates$CS_ID, split="S")
-
-ddd <- function(dfRow){
-  temp <- strsplit(dfRow, split="S")
-  paste(temp[1],"0",temp[2])
+library(stringr)
+addZeroCSID <- function(row){
+  print(row)
+  num <- as.numeric(str_extract(row, "[0-9]+"))
+  paste("CS0",num, sep="")
 }
 
-ddd(duplicates$CS_ID)
-
-
+duplicates$CS_ID <- addZeroCSID(duplicates$CS_ID)
+df <- rbind(without.duplicated.cs, duplicates)
 
 

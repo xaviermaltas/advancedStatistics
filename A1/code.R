@@ -55,4 +55,85 @@ addZeroCSID <- function(row){
 duplicates$CS_ID <- addZeroCSID(duplicates$CS_ID)
 df <- rbind(without.duplicated.cs, duplicates)
 
+#4 - Normalització de les dades qualitatives
+##4.1 Eliminació d'espais en blanc
+### https://www.datasciencemadesimple.com/strip-leading-trailing-spaces-of-column-in-r-remove-space-r-2/#:~:text=trimws()%20function%20is%20used,of%20the%20column%20in%20R.
+str(df)
+df$workclass <- trimws(df$workclass, which = c("both"))
+df$marital_status <- trimws(df$marital_status, which = c("both"))
+df$relationship <- trimws(df$relationship, which = c("both"))
+df$occupation <- trimws(df$occupation, which = c("both"))
+df$race <- trimws(df$race, which = c("both"))
+df$gender <- trimws(df$gender, which = c("both"))
+str(df)
 
+##4.2 Martial-Status
+### https://stackoverflow.com/questions/24849699/map-array-of-strings-to-an-array-of-integers
+unique(df[c("marital_status")])
+require(plyr)
+library('plyr')
+df$marital_status <- revalue (x = df$marital_status, c("Married" = "M", "Single" = "S", "Separated" = "X", "Divorced" = "D", "Widowed" = "W"))
+unique(df[c("marital_status")])
+if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
+### https://stackoverflow.com/questions/21639392/make-frequency-histogram-for-factor-variables
+martial_status_table <- table(df$marital_status)
+barplot(martial_status_table, main="Martial Status Distribution", xlab = "Status")
+
+###4.3 Gènere
+unique(df[c("gender")])
+df$gender <- revalue (x = df$gender, c("M" = "m", "Fem" = "f", "F" = "f", "male" = "m", "female" = "f", "Male" = "m", "Female" = "f"))
+gender_table <- table(df$gender)
+barplot(gender_table, main="Martial Status Distribution", xlab = "Status")
+
+
+
+#5 - Normalització de les dades quantitatives
+##5.1 Edat
+unique(df[c("age")])
+if (!require('naniar')) install.packages('naniar'); library('naniar')
+df <- df%>% replace_with_na(replace = list(age = c(650,560)))
+colSums(is.na(df))
+filter(df, CS_ID == 'CS430')
+filter(df, CS_ID == 'CS2754')
+
+##5.2 Educacio
+unique(df[c("education_num")])
+
+##5.3 Hores per setmana
+sapply(df,class)
+unique(df[c("hours_per_week")])
+
+extractNum <- function(row){
+  num <- gsub("[a-zA-Z ]", "", row)
+  num <- as.numeric(gsub(",", ".",num))
+}
+df$hours_per_week <- extractNum(df$hours_per_week)
+sapply(df,class)
+unique(df[c("hours_per_week")])
+
+##5.4 Income
+
+extractMoneyUnit <- function(row){
+  unit <- gsub('[0-9]+', '', row)
+  unit <- gsub(",", "", unit)
+  unit <- trimws(unit, which = c("both"))
+}
+
+extractMoneyAmount <- function(row){
+  num <- gsub("[a-zA-Z ]", "", row)
+  num <- gsub("'", "", num)
+  num <- as.numeric(gsub(",", ".",num))
+  
+}
+
+df$moneyUnit <- extractMoneyUnit(df$income)
+df$amountIncome <- extractMoneyAmount(df$income)
+unique(df[c("moneyUnit")])
+
+### https://bookdown.org/jboscomendoza/r-principiantes4/if-else.html
+normalizeAmount <- function(unit, amount){
+  num <- ifelse(unit == "euros", amount/1000, amount)
+}
+
+df$income <- normalizeAmount(df$moneyUnit, df$amountIncome)
+df <- df[!names(df) %in% c("moneyUnit", "amountIncome")]

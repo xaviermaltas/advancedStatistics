@@ -24,7 +24,462 @@ library(knitr)
 
 ******
 # Càrrega de l'arxiu
+
+En primer lloc, realitzarem la càrrega de l'arxiu que conté el Dataset a analitzar. 
 ******
 ```{r, echo=TRUE}
 df.full <- read.csv("CensusIncomedataset.csv", sep=";")
 ```
+
+Un cop disposem del Dataset complet carregat, realitzarem un breu estudi de les dades d'entrada a través de les següent instruccions.
+
+```{r, echo=TRUE}
+print(paste("Dataset contains", nrow(df.full), "registers"))
+```
+La primera instrucció ens permet observar que disposem d'un total de 32560 registres. 
+
+```{r, echo=TRUE}
+str(df.full)
+summary(df.full)
+head(df.full)
+```
+A continuació, veiem que cada un d'aquests registres es compon de 12 atributs. Majoritàriament, són de tipus _character_, mentre que els elements restants són de tipus _integer_. A la vegada, també disposem d'un petit resum de com es distribueix cada atribut, així com una petita mostra del conjunt de dades entrant.
+
+# Obtenció del dataset per fer l'estudi
+
+Dels 12 atributs que disposa cada registre, s'ha decidit que tres d'ells _(fnlwgt, capital_gain, capital_loss)_ no són necessaris. A la vegada, tots aquells registres que tinguin més de 5 valors no definits, seran eliminats de la mostra.
+
+```{r, echo=TRUE}
+df <- df.full[!(names(df.full) %in% c("fnlwgt", "capital_gain", "capital_loss"))]
+```
+
+Un cop ja hem retirat els atributs innecessaris per l'anàlisi, a continuació extraurem aquells registres amb una alta quantitat de valors indefinits.
+```{r, echo=TRUE}
+colSums(is.na(df))
+row.has.na <- apply(df, 1, function(x){any(is.na(x))})
+df.with.na <- df[row.has.na,]
+df.with.na
+```
+
+Observem que són 7 el nombre de registres que contenen valors indefinits. A la vegada, tots ells es concentren als mateixos atributs. Així doncs, aquests hauran de ser extrets de la mostra tal com indiquen els paràmetres.
+
+```{r, echo=TRUE}
+#Generem una funció per comptabilitzar la quantitat de nuls de cada registre. Si és major de 5, l'eliminem
+library('dplyr')
+df$naCount <- apply(df, 1, function(x){sum(is.na(x))})
+df <- df %>% filter(naCount < 5)
+#Eliminem l'atribut creat per realitzar el cribratge
+df <- df[!names(df) %in% c("naCount")]
+```
+
+Després d'eliminar els registres que contenen una gran quantitat de valors nuls, ens disposem a realitzar un _mapping_ per intervals dels anys d'educació de cada persona.
+
+```{r, echo=TRUE}
+#Instal·lem la següent llibreria en cada de no disposar d'ella
+### https://cran.r-project.org/web/packages/mappings/mappings.pdf
+if(!require('mappings'))
+  install.packages('remotes')
+  library('remotes')
+remotes::install_github("benjaminrich/mappings")
+library(mappings)
+
+#Creem els intervals i la funció de mappeig
+education_cat_intervals <- c(0, 7, 10, 14, Inf)
+m <- cut_mapping(education_cat_intervals, right=FALSE,
+                 to=c("primaria", "secundaria", "universitaria", "postuniversitaria"))
+print(m)
+
+#Generem un nou atribut aplicant el mapping
+df$education_cat<- m(df$education_num)
+```
+
+Finalment, realitzarem un canvi de nom de la variable _sex_ per _gender_.
+
+```{r, echo=TRUE}
+df$gender <- df$sex
+df <- df[!names(df) %in% c("sex")]
+```
+
+# Duplicació de codis
+
+En aquest tercer apartar, realitzarem la verificació i la modificació dels codis _CS_ID_ en cas de que aquest es trobin duplicats.
+
+```{r, echo=TRUE}
+#Obtenim els registres que disposen d'un codi CS_ID duplicat
+duplicates <- df[duplicated(df$CS_ID),]
+duplicates
+
+#Ens quedem per separat amb els registres que no contenen codis CS_ID duplicats
+without.duplicated.cs <- df %>% distinct(CS_ID, .keep_all = TRUE)
+
+#Respecte a els registres amb codis duplicats, realitzem una modificació d'aquest 
+# a través d'afegir un zero entre els caràcters CS i el valor numèric, generant
+# un nou codi únic
+library(stringr)
+addZeroCSID <- function(row){
+  print(row)
+  num <- as.numeric(str_extract(row, "[0-9]+"))
+  paste("CS0",num, sep="")
+}
+duplicates$CS_ID <- addZeroCSID(duplicates$CS_ID)
+
+#Afegim de nou els registres, ara amb un nou codi CS_ID
+#Unim el DataFrame sense duplicats amb el dels duplicats modificats
+df <- rbind(without.duplicated.cs, duplicates)
+```
+
+# Normalització de les dades qualitatives
+
+## Eliminació d'espais en blanc
+
+```{r, echo=TRUE}
+str(df)
+```
+
+Mitjançant l'anterior comanda, podem observar que existeixen espais en blanc davant de múltiples atributs de tipus _character_. A continuació, eliminarem aquests espais en blanc.
+
+```{r, echo=TRUE}
+#Eliminació d'espais en blanc als dos costats de l'atribut
+df$workclass <- trimws(df$workclass, which = c("both"))
+df$marital_status <- trimws(df$marital_status, which = c("both"))
+df$relationship <- trimws(df$relationship, which = c("both"))
+df$occupation <- trimws(df$occupation, which = c("both"))
+df$race <- trimws(df$race, which = c("both"))
+df$gender <- trimws(df$gender, which = c("both"))
+str(df)
+```
+
+Ara ja podem observar que els espais en blanc que anteriorment podíem veure, ja no hi són.
+
+## Marital-Status
+
+L'atribut _marital_status_, ens indica l'estat civil de l'individu. Per reduir l'espai d'aquesta variable, realitzarem un _mapping_ canviant els diferents valors a un únic caràcter representatiu de cada estat.
+
+```{r, echo=TRUE}
+#En primer lloc, comprovem que només disposem de valors correctes
+unique(df[c("marital_status")])
+
+#Seguidament, realitzem una revalorització d'aquest atribut tal com ens indica l'enunciat
+library('plyr')
+df$marital_status <- revalue (x = df$marital_status, c("Married" = "M", "Single" = "S", "Separated" = "X", "Divorced" = "D", "Widowed" = "W"))
+unique(df[c("marital_status")])
+```
+
+Finalment, un cop comprovat que la revalorització s'ha realitzat correctament, representem gràficament la distribució dels valors d'aquesta variable. Els estats civils majoritaris són _Married_ i _Single_.
+
+
+```{r, echo=TRUE}
+if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
+martial_status_table <- table(df$marital_status)
+barplot(martial_status_table, main="Martial Status Distribution", xlab = "Status")
+```
+
+## Gènere
+
+En aquest apartat realitzarem una normalització de l'atribut _gender_. Observem al conjunt de dades, que hi ha múltiples formes d'expressar el mateix. És per aquest motiu, que duem a terme aquest procés d'estandardització.
+
+```{r, echo=TRUE}
+unique(df[c("gender")])
+df$gender <- revalue (x = df$gender, c("M" = "m", "Fem" = "f", "F" = "f", "male" = "m", "female" = "f", "Male" = "m", "Female" = "f"))
+```
+
+Finalment, un cop disposem de les dades estandarditzades, representem gràficament la distribució del paràmetre _gender_, on veiem que la mostra es compon per molts més homes que dones.
+
+```{r, echo=TRUE}
+gender_table <- table(df$gender)
+barplot(gender_table, main="Gender Distribution", xlab = "Gender")
+```
+
+# Normalització de les dades quantitatives
+
+## Edat
+
+Analitzant els valors únics que pren el paràmetre _age_ observem que hi ha dos registres que tenen un valor incoherent. És per aquest motiu, que deixarem aquests atributs com a valors nuls.
+
+```{r, echo=TRUE}
+#unique(df[c("age")]) #uncomment to see all values
+
+#Replace a valors NA
+if (!require('naniar')) install.packages('naniar'); library('naniar')
+df <- df%>% replace_with_na(replace = list(age = c(650,560)))
+#Visualitzem que ara si que tenim valors NA al camp 'age'
+colSums(is.na(df))
+
+#Comprovem els dos registres
+filter(df, CS_ID == 'CS430')
+filter(df, CS_ID == 'CS2754')
+```
+
+A continuació, mostrem com es distribueixen els valors de la variable _age_.
+```{r, echo=TRUE}
+ggplot(df, aes(x = age)) +
+  geom_density(fill = "indianred3") + 
+  labs(title = "Age Distribution")
+```
+
+## Educació
+
+```{r, echo=TRUE}
+#unique(df[c("education_num")]) #uncomment to see all values
+```
+
+Un cop analitzat els valors que pot tenir l'atribut _education_num_, podem determinar que no hi ha cap comportament incoherent. A continuació, mostrarem la distribució d'aquests valors, on podem veure que els registres es concentren entre els 9 i 13 anys.
+
+```{r, echo=TRUE}
+ggplot(df, aes(x = education_num)) +
+  geom_density(fill = "indianred3") + 
+  labs(title = "Years of education Distribution")
+```
+
+
+## Hores per setmana
+
+```{r, echo=TRUE}
+#Obtenim la class de la variable _hours_per_week -> character
+sapply(df,class) 
+# unique(df[c("hours_per_week")]) #uncomment to see all values
+```
+El paràmetre _hours_per_week_ és de tipus _character_, tot i que realment ens interessa que sigui de tipus _numeric_. En primer lloc, hem d'eliminar les unitats i seguidament transformar aquest valor a tipus _numeric_.
+
+```{r, echo=TRUE}
+#Realitzem una funció que extreu el valor i fa el casting a tipus numeric
+extractNum <- function(row){
+  num <- gsub("[a-zA-Z ]", "", row) #Elimiem caracters
+  num <- as.numeric(gsub(",", ".",num)) #Comma to dot, to numeric
+}
+df$hours_per_week <- extractNum(df$hours_per_week)
+#Comprovació del canvi de tipus i eliminació de les unitats
+sapply(df,class)
+```
+
+## Income
+
+La variable _income_ ha d'estar expressada en milers d'euros. Dins el nostre conjunt de dades, observem que hi ha dues maneres de representar-la. És per aquest motiu que hem de realitzar una primera estandardització d'unitats i seguidament en tipus de variable, ja que inicialment és de tipus _character_.
+
+```{r, echo=TRUE}
+#Funció per extreure el tipus d'unitat (euros, milers d'euros)
+extractMoneyUnit <- function(row){
+  unit <- gsub('[0-9]+', '', row)
+  unit <- gsub(",", "", unit)
+  unit <- trimws(unit, which = c("both"))
+}
+
+#Funció per extreure la quantitat a tipus numeric
+extractMoneyAmount <- function(row){
+  num <- gsub("[a-zA-Z ]", "", row)
+  num <- gsub("'", "", num)
+  num <- as.numeric(gsub(",", ".",num))
+  
+}
+
+#Afegir dos parametres nous que ens seriviran per realitzar l'estandariatzació final
+df$moneyUnit <- extractMoneyUnit(df$income)
+df$amountIncome <- extractMoneyAmount(df$income)
+
+#Funció per normalitzar tots els valors a milers d'euros tipus numèric
+normalizeAmount <- function(unit, amount){
+  num <- ifelse(unit == "euros", amount/1000, amount)
+}
+
+df$income <- normalizeAmount(df$moneyUnit, df$amountIncome)
+#Eliminem les dues variables auxiliars
+df <- df[!names(df) %in% c("moneyUnit", "amountIncome")]
+```
+
+# Valors atípics
+
+En aquest apartat ens dedicarem a analitzar les variables _age_, _education_num_, _hours_per_week_ i _income_, per tal d'intentar observar si hi ha i quins són els valors atípics o outliers.
+
+## Age
+
+Per començar observem diferents estadistiques corresponents a la distribució de la variable i grafiant el boxplot.
+
+```{r, echo=TRUE}
+#Estadistiques
+summary(df$age)
+
+#BoxPlot
+age.bp <- boxplot(df$age, xlab = "Age", horizontal=TRUE)
+```
+
+A través de les estadístiques anteriors i el _BoxPlot_ podem veure que les dades es concentren entre el rang dels 25-50 anys. Els valors superiors al 77 anys aproximadament són considerats outliers segons el gràfic BoxPlot.
+
+```{r, echo=TRUE}
+#Obtenir els considerats outliers
+ageOutliersAge <- age.bp$out
+#ageOutliersAge #uncomment to see all values
+```
+
+Nosaltres, per a calcular els intervals, farem servir el criteri +/-2SD, que ens permetrà establir els rangs sobre els quals treballar.
+
+```{r, echo=TRUE}
+###Criteri +/-2SD  
+age.mean<-mean(df$age, na.rm=TRUE) #Calcul Mean
+age.sd<-sd(df$age, na.rm=TRUE) #Calcul Standard Deviation
+age.cutoff<- age.sd*2
+print(paste("Cutoff: ",age.cutoff))
+age.upperBoundary <- age.mean+age.cutoff #upper boundary
+age.lowerBoundary <- age.mean-age.cutoff #Lower boundary
+print(paste("Range: [", age.lowerBoundary, ",",age.upperBoundary, "]"))
+
+#Funció per posar els valors fora del rang com a NA
+NAAge <- function(lower, upper, age){
+  num <- ifelse ( (lower < age ) & ( age < upper ), age, NA)  
+}
+df$age <- NAAge(age.lowerBoundary,age.upperBoundary,df$age)
+```
+
+## Education_num
+
+Per analitzar aquest paràmetre seguirem el mateix procediment que en l'anterior.
+
+```{r, echo=TRUE}
+#Estadistiques
+summary(df$education_num)
+
+#BoxPlot
+education_num.bp <- boxplot(df$education_num, xlab = "Years", horizontal=TRUE)
+```
+
+Tal com hem esmentat anteriorment a l'apartat 5.2, els valors majoritaris corresponents a la quantitat d'anys estudiats dins la mostra es concentra entre 9 i 12. Per altra banda, observem un seguit de registres que es troben bastant fora de la majoria a la zona baixa del BoxPlot. Aquests rangs corresponen a 1-5 anys. Tot i que són valors summament estranys, considerem que no han de ser eliminats, ja que desconeixem els orígens socioeconòmics de l'individu, així com el país d'origen i la situació que hi havia durant la seva etapa infantil, que és la que majoritàriament es dedica a la formació.
+
+```{r, echo=TRUE}
+#Obtenir els considerats outliers
+educationNumOutliersAge <- education_num.bp$out
+#educationNumOutliersAge #uncomment to see all values
+```
+
+## Hours per week
+
+Mitjançant les estadistiques podem observar que les hores per setmana realitzades per a  cada individu es trobem majoritariament concentrades entre 40 i 45 hores. A la vegada, a través del BoxPlot podem observar que hi ha molts registres que es troben per sota d'aquest rang, pero encara més que es troben per sobre.
+
+```{r, echo=TRUE}
+#Estadistiques
+summary(df$hours_per_week)
+
+#BoxPlot
+hours_per_week.bp <- boxplot(df$hours_per_week, xlab = "Hours", horizontal=TRUE)
+```
+
+Seguint els valors establerts de l'enunciat, es consideraran outliers aquells valors que siguin superiors a 80 hores setmanals. Així que a continuació, deixarem com a NA els valors que superen aquesta xifra.
+
+```{r, echo=TRUE}
+#Funció per posar els valors superiors a 80 com a NA
+NAhoursAbove80 <- function(hours){
+  num <- ifelse(hours > 80, NA, hours)
+}
+
+df$hours_per_week <- NAhoursAbove80(df$hours_per_week)
+```
+
+## Income
+
+```{r, echo=TRUE}
+#Estadistiques
+summary(df$income)
+#BoxPlot
+income.bp <- boxplot(df$income, xlab = "k€", horizontal=TRUE)
+```
+
+A través dels paràmetres estadístics, podem observar que els valors dels salaris, es troben majoritàriament compresos entre el rang dels 40.000 - 50.000€. A la vegada, si visualitzem el gràfic BoxPlot, podem veure que descobrim alguns outliers que són summament significatius, ja que fan que les caixes dels quartils pràcticament desapareguin.
+
+Els outliers corresponen al següents valors:
+
+```{r, echo=TRUE}
+incomeOutliersAge <- income.bp$out
+incomeOutliersAge
+```
+
+Els valors que tenen una tendència més a la baixa, poden tenir algun tipus de relació, a persones que fan menys hores (estudiar i treballar). Mentre que els valors corresponents a xifres desorbitades, podríem estar parlant de persones que són multimilionàries. Com a tal, tot i ser valors molt llunyans als estàndard vistos, no poden ser tractats com a outliers, ja que descriuen situacions que són plausibles.
+
+# Imputació de valors
+
+En aquest apartat ens dedicarem a atribut valor a les variables quantitaties que hem deixat com a valors NA.
+
+## Age
+
+La variable _age_ és una de les que anteriorment hem atribuit valors NA als outliers. Per tal de realitzar la imputació d'aquests valors, aplicarem la mitjana aritmètica.
+
+```{r, echo=TRUE}
+#Funció per aplicar la mitjana aritmètica als valors NA
+NAtoMeanAge <- function(age, mean){
+  num <- ifelse(is.na(age), mean, age)
+}
+age.mean<-mean(df$age, na.rm=TRUE) #Mean computation
+df$age <- NAtoMeanAge(df$age, age.mean)
+```
+
+## Income
+
+A la variable _income_ no s'ha modificat cap registre, ja que tal com hem explicat anteriorment, hem determinat que tot i haver valors molt allunyats dels estàndards, aquests poden descriure una situació real. Així doncs, en aquest apartat no s'ha de realitzar cap imputació.
+
+## Education_num
+
+L'atribut _education_num_, al igual que la variable _income_ no ha estat modificada a l'apartat anterior pel motius esmentat. Així doncs, en aquest apartat no s'ha de realitzar cap imputació.
+
+## Hours per week
+
+Per tal de realitzar la imputació dels valors NA corresponents a la variable _hours_per_week_ utilitzarem la funció _'kNN'_ de la llibreria VIM amb una nombre de veïns igual a 11.
+
+```{r, echo=TRUE}
+if(!require('VIM'))
+  install.packages('VIM')
+library('VIM')
+
+#Funció per posar NA com mitjançant la funció kNN - Not working
+NAToKNN <- function(hours){
+  #knnimp <- kNN(hours, k = 11)
+  #num <- ifelse(is.na(hours), knnimp, hours)
+}
+
+#df$hours_per_week <- NAToKNN(df$hours_per_week)
+```
+
+
+# Estudi descriptiu
+
+## Funcions de mitjana robustes
+
+### Mitjana retallada
+
+```{r, echo=TRUE}
+#Definició de la funció
+mitjana.retallada <- function(x, perc=0.05){
+  v <- mean(x,trim=perc)
+}
+
+#Set 
+x=c(800,6,4,5,5,5,5,6,4,2)
+
+#Execució
+a <- mitjana.retallada(x)
+```
+
+### Mitjana Winsor
+
+```{r, echo=TRUE}
+if(!require('psych'))
+  install.packages('psych')
+library('psych')
+
+#Definició de la funció
+mitjana.winsor <- function(x, perc=0.05){
+  v <- winsor.mean(x, trim=perc)
+}
+
+#Set 
+x=c(800,6,4,5,5,5,5,6,4,2)
+
+#Execució
+b <- mitjana.winsor(x)
+```
+
+
+# Arxiu final
+
+Un cop realitzat el processament sobre l'arxiu, guardarem les dades dins d'un fitxer anomenant _'CensusIncome_clean.csv'_.
+
+```{r, echo=TRUE}
+write.csv(df,"CensusIncome_clean.csv", row.names = TRUE)
+```
+

@@ -15,20 +15,24 @@ head(df.full)
 #2 - Obtenicio del dataset per fer l'estudi
 ##Eliminacio del parametres "fnlwgt", "capital_gain", "capital_loss"
 df <- df.full[!(names(df.full) %in% c("fnlwgt", "capital_gain", "capital_loss"))]
-colSums(is.na(df))
 
+colSums(is.na(df))
 row.has.na <- apply(df, 1, function(x){any(is.na(x))})
 df.with.na <- df[row.has.na,]
 
 ### https://stackoverflow.com/questions/37801338/count-nas-per-row-in-dataframe
 ### https://stackoverflow.com/questions/63432836/remove-rows-from-a-data-frame-where-a-cell-is-smaller-or-greater-than-values-in
-df$naCount <- apply(df, 1, function(x){sum(is.na(x))})
 library('dplyr')
+df$naCount <- apply(df, 1, function(x){sum(is.na(x))})
 df <- df %>% filter(naCount < 5)
 df <- df[!names(df) %in% c("naCount")]
 
+#Instal·lem la següent llibreria en cada de no disposar d'ella
 ### https://cran.r-project.org/web/packages/mappings/mappings.pdf
-if (!require('mappings'))  install.packages("remotes") require(remotes) remotes::install_github("benjaminrich/mappings") ;
+if(!require('mappings'))
+  install.packages('remotes')
+library('remotes')
+remotes::install_github("benjaminrich/mappings")
 library(mappings)
 
 education_cat_types <- c("primaria", "secundaria", "universitaria", "postuniversitaria")
@@ -70,7 +74,6 @@ str(df)
 ##4.2 Martial-Status
 ### https://stackoverflow.com/questions/24849699/map-array-of-strings-to-an-array-of-integers
 unique(df[c("marital_status")])
-require(plyr)
 library('plyr')
 df$marital_status <- revalue (x = df$marital_status, c("Married" = "M", "Single" = "S", "Separated" = "X", "Divorced" = "D", "Widowed" = "W"))
 unique(df[c("marital_status")])
@@ -83,7 +86,7 @@ barplot(martial_status_table, main="Martial Status Distribution", xlab = "Status
 unique(df[c("gender")])
 df$gender <- revalue (x = df$gender, c("M" = "m", "Fem" = "f", "F" = "f", "male" = "m", "female" = "f", "Male" = "m", "Female" = "f"))
 gender_table <- table(df$gender)
-barplot(gender_table, main="Martial Status Distribution", xlab = "Status")
+barplot(gender_table, main="Gender Distribution", xlab = "Gender")
 
 
 
@@ -96,8 +99,17 @@ colSums(is.na(df))
 filter(df, CS_ID == 'CS430')
 filter(df, CS_ID == 'CS2754')
 
+### https://rkabacoff.github.io/datavis/Univariate.html
+ggplot(df, aes(x = age)) +
+  geom_density(fill = "indianred3") + 
+  labs(title = "Age Distribution")
+
 ##5.2 Educacio
 unique(df[c("education_num")])
+ggplot(df, aes(x = education_num)) +
+  geom_density(fill = "indianred3") + 
+  labs(title = "Years of education Distribution")
+
 
 ##5.3 Hores per setmana
 sapply(df,class)
@@ -112,7 +124,6 @@ sapply(df,class)
 unique(df[c("hours_per_week")])
 
 ##5.4 Income
-
 extractMoneyUnit <- function(row){
   unit <- gsub('[0-9]+', '', row)
   unit <- gsub(",", "", unit)
@@ -137,3 +148,103 @@ normalizeAmount <- function(unit, amount){
 
 df$income <- normalizeAmount(df$moneyUnit, df$amountIncome)
 df <- df[!names(df) %in% c("moneyUnit", "amountIncome")]
+
+#6 - Valors atípics
+
+## Age
+summary(df$age)
+
+ggplot(df, aes(x = age)) +
+  geom_density(fill = "indianred3") + 
+  labs(title = "Age Distribution")
+
+age.bp <- boxplot(df$age, xlab = "Age", horizontal=TRUE)
+ageOutliersAge <- age.bp$out
+ageOutliersAge
+
+###Criteri +/-2SD  
+age.mean<-mean(df$age, na.rm=TRUE)
+age.sd<-sd(df$age, na.rm=TRUE)
+age.cutoff<- age.sd*2
+print(paste("Cutoff: ",age.cutoff))
+age.upperBoundary <- age.mean+age.cutoff
+age.lowerBoundary <- age.mean-age.cutoff
+print(paste("Range: [", age.lowerBoundary, ",",age.upperBoundary, "]"))
+
+NAAge <- function(lower, upper, age){
+  num <- ifelse ( (lower < age ) & ( age < upper ), age, NA)  
+}
+df$age <- NAAge(age.lowerBoundary,age.upperBoundary,df$age)
+
+## Education Num
+summary(df$education_num)
+
+education_num.bp <- boxplot(df$education_num, xlab = "HOurs", horizontal=TRUE)
+
+educationNumOutliersAge <- education_num.bp$out
+educationNumOutliersAge #uncomment to see all values
+
+
+ggplot(df, aes(x = education_num)) +
+  geom_density(fill = "indianred3") + 
+  labs(title = "Years of education Distribution")
+
+##Hours per week
+
+summary(df$hours_per_week)
+hours_per_week.bp <- boxplot(df$hours_per_week, xlab = "Years", horizontal=TRUE)
+
+NAhoursAbove80 <- function(hours){
+  num <- ifelse(hours > 80, NA, hours)
+}
+
+df$hours_per_week <- NAhoursAbove80(df$hours_per_week)
+
+## Income
+summary(df$income)
+income.bp <- boxplot(df$income, xlab = "k€", horizontal=TRUE)
+incomeOutliersAge <- income.bp$out
+incomeOutliersAge
+
+# Imputacio de valors
+
+## Age 
+
+NAtoMeanAge <- function(age, mean){
+  num <- ifelse(is.na(age), mean, age)
+}
+age.mean<-mean(df$age, na.rm=TRUE)
+df$age <- NAtoMeanAge(df$age, age.mean)
+
+## Hours per week
+if(!require('VIM'))
+  install.packages('VIM')
+library('VIM')
+
+NAToKNN <- function(hours){
+  knnimp <- kNN(hours, k = 11)
+  
+  num <- ifelse(is.na(hours), knnimp, hours)
+}
+
+df$hours_per_week <- NAToKNN(df$hours_per_week)
+
+# Estudi descriptiu
+
+## Funcions de mitjana robustes
+
+###https://www.uv.es/webgid/Descriptiva/25_otras_medias.html#:~:text=Para%20obtener%20la%20Media%20recortada,las%20puntuaciones%20del%20extremo%20inferior.
+###https://www.uv.es/mperea/r_ejemplo.htm
+x=c(800,6,4,5,5,5,5,6,4,2)
+mitjana.retallada <- function(x, perc=0.05){
+  v <- mean(x,trim=perc)
+}
+a <- mitjana.retallada(x)
+
+# https://www.r-bloggers.com/2011/06/winsorization/
+library('psych')
+mitjana.winsor <- function(x, perc=0.05){
+  v <- winsor.mean(x, trim=perc)
+}
+b <- mitjana.winsor(x)
+

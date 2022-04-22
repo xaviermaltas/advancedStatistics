@@ -17,22 +17,105 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r load_libraries, include=FALSE}
+#Imports
+library(knitr)
+if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
+if (!require('plyr')) install.packages('plyr'); library('plyr')
+if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
+if (!requireNamespace("remotes", quietly = TRUE))
+  install.packages("remotes")
+remotes::install_github("aursiber/fitdistrplus")
+library(fitdistrplus)
+if (!require('logspline')) install.packages('logspline'); library('logspline')
 ```
 
-## Including Plots
+******
+# Lectura del fitxer i preparació de les dades
+******
 
-You can also embed plots, for example:
+Realitzarem la càrrega de l'arxiu que conté el conjunt de dades. 
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r, echo=TRUE}
+cens <- read.csv("CensusIncome_clean.csv", sep=",")
+head(cens)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+*****
+# Edat
+*****
+
+## Distribució d'edats
+
+Visualitzem gràficament els valors corresponents al paràmetre edat per poder determinar quin tipus de distribució segueix.
+
+```{r, echo=TRUE}
+#Density plot
+ggplot(cens, aes(x = age)) +
+  geom_density(fill = "indianred3") + 
+  labs(title = "Age Distribution")
+```
+
+Observant el primer gràfic podem afirmar que el paràmetre 'Age' segueix una distribució de tipus Normal. Tot i això, realitzarem una segona gràfica comparativa entre els valors de la mostra respecte a la densitat teòrica de la distribució Normal. Aquesta segona representació ens permet confirmar que sí que se segueix aquest tipus de distribució centrada al valor 38.5 i una desviació estàndard de 13.5.
+
+```{r, echo=TRUE}
+fitdistr(cens$age, "normal")
+discrete.age <- cens$age
+#descdist(discrete.age, discrete = FALSE)
+fit.norm <- fitdist(discrete.age, "norm")
+denscomp(fit.norm)
+```
+
+## Normalitat
+
+Els intervals de confiança és una tècnica d'estimació que ens permeten acotar entre dos valors on es trobarà la mitjana poblacional fent ús de la mitjana mostral. És a dir, realitzem l'estimació del valor de tota la població, mitjançant l'ús d'una mostra significativa de valors de la població.
+En el nostre cas, podem assumir normalitat després d'observar la distribució del paràmetre 'Age', i com a tal calcular l'interval de confiança de la mitjana d'edat.
+
+## Interval de confiança
+
+A continuació realitzem una funció anomenada IC que donat un vector de dades (x) i un nivell de confiança (NF), retorni els intervals de confiança de la mostra. 
+
+```{r, echo=TRUE}
+IC <- function(x, NC) {
+  n <- length(x)
+  mean <- mean(x)
+  sd <- sd(x)
+  z <- abs(qnorm(((1-NC)/2)))
+  errorst <- sd/sqrt(n)
+  lim_inf <- mean - (z*errorst)
+  lim_sup <- mean + (z*errorst)
+  output <- data.frame(NC, n, mean, sd, z, errorst, lim_inf, lim_sup)
+  return(output)
+}
+```
+
+## Càlculs
+
+Calculem els intervals de confiança de la variable 'Age' mitjançant la funció creada a l'apartat anterior. A la vegada, realitzem la comprovació del correcte funcionament de la nostra funció mitjançant la qual disposa R anomenada t.test.
+
+```{r, echo=TRUE}
+IC(cens$age, 0.95)
+IC(cens$age, 0.90)
+
+t.test(cens$age, conf.level = 0.95)
+t.test(cens$age, conf.level = 0.90)
+```
+Podem observar que els resultats obtinguts d'ambdues funcions és el mateix utilitzant dos nivells de confiança diferents.
+
+## Interpretació
+
+Els intervals de confiança ens permeten establir entre quins valors es trobarà la mitjana d'edat amb un percentatge concret de confiança. Així doncs, utilitzant el nivell de confiança del 95%, podem determinar que la mitjana d'edat es trobarà entre 38.4 i 38.7 anys, és a dir, en 38 anys.
+
+******
+# Salari
+******
+## Pregunta de recerca
+## Hipòtesi
+## Test a aplicar
+## Càlcul
+## Conclusió
+
+
+```{r, echo=TRUE}
+
+```

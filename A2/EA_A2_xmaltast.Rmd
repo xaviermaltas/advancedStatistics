@@ -109,13 +109,118 @@ Els intervals de confiança ens permeten establir entre quins valors es trobarà
 ******
 # Salari
 ******
-## Pregunta de recerca
-## Hipòtesi
-## Test a aplicar
-## Càlcul
-## Conclusió
 
+En aquest apartat realitzarem un estudi de la variable 'income', que recordem es troba en milers d'euros (k€) com a unitat.
+
+## Pregunta de recerca
+
+La pregunta formulada és que si el salari promig de les persones Self-Employed és inferior al salari promig al de la resta de modalitats. 
+
+## Hipòtesi
+
+Un cop formulada la pregunta que desitgem respondre, cal determinar la hipòtesi nul·la i la hipòtesi alternativa.
+
+$$
+H_0: \mu _S <\mu_O
+$$
+
+$$
+H_1: \mu _S \geq \mu_O
+$$
+
+La primera de les dues, la hipòtesi nul·la, representa allò que desitgem provar. En aquest cas, el que volem provar és que el salari de la gent Self-Employed, representat mitjançant $$\mu _S$$, de forma mitjana, és inferior al salari de les altres modalitats. Representat mitjançant: $$\mu _0$$
+
+Mentre que la segona, la hipòtesi alternativa, és aquella que oferim com a alternativa a la nul·la. En aquest cas, la hipòtesi alternativa indica que el salari de la gent Self-Employed en promig, és igual o major que el de la gent d'altres modalitats.
+
+## Test a aplicar
+
+Per saber quin tipus de test podem aplicar per resoldre la pregunta plantejada i les caracteristiques de la mostra, realitzarem un petit estudi sobre el conjunt de dades.
+
+```{r, echo=TRUE}
+#Grafic
+pie(table(cens$workclass), main="Workclass")
+
+#SelfEmployed DF and nrows
+selfemployed <- cens %>% filter(workclass == "Self-Employed")
+selfemployed.nrow <- nrow(selfemployed)
+print(paste("Self-Employed is a ", (selfemployed.nrow/(nrow(cens))) *100, "% of the set"))
+```
+
+En primer lloc, observem quina és la proporció de la mostra que correspon a la gent de tipus Self-Employed. Aquestes corresponen un total de 3657 de registres, que suposen un 11.23 % de la mostra. A continuació visualitzarem la distribució dels salaris, el grup que són Self-Employed i el de les altres modalitats.   
+
+```{r, echo=TRUE}
+#Self-Employed
+##Grafic
+ggplot(selfemployed, aes(x = income)) +
+  geom_density(fill = "indianred3") + 
+  labs(title = "Self-Employed Salary Distribution")
+
+selfemployed.discrete.income <- selfemployed$income
+fit.norm <- fitdist(selfemployed.discrete.income, "norm")
+denscomp(fit.norm)
+
+## Mean and sd
+selfemployed.salary.mean <- mean(selfemployed$income)
+print(selfemployed.salary.mean)
+selfemployed.salary.sd <- sd(selfemployed$income)
+print(selfemployed.salary.sd)
+
+#No Self-Employed
+##Grafic
+noselfemployed <- cens %>% filter(workclass != "Self-Employed")
+ggplot(noselfemployed, aes(x = income)) +
+  geom_density(fill = "indianred3") + 
+  labs(title = "No Self-Employed Salary Distribution")
+
+noselfemployed.discrete.income <- noselfemployed$income
+fit.norm <- fitdist(noselfemployed.discrete.income, "norm")
+denscomp(fit.norm)
+
+## Mean and sd
+noselfemployed.salary.mean <- mean(noselfemployed$income)
+print(noselfemployed.salary.mean)
+noselfemployed.salary.sd <- sd(noselfemployed$income)
+print(noselfemployed.salary.sd)
+```
+
+A través dels gràfics anteriors, podem determinar que les dues mostres tenen un comportament que té una tendència simètrica. Tot i que aquest no és perfecte, sí que podem destacar que totes dues es troben centrades al voltant del valor 49. La distribució que segueix la mostra de la gent Self-Employed és de tipus t de Student, mentre que la distribució de la mostra global i no Self-Employed, és de tipus normal.
+
+
+Donat que tenim distribucions simètriques, podem aplicar el concepte d'__estadístic de contrast__. Aquest mètode ens permet determinar si una propietat que se suposa com a certa per a una població estadística, és compatible observant una mostra d'aquesta població.
+Per altra banda, l'altre test que podem aplicar és el del __valor p__.
+El valor p és una xifra que oscil·lar entre 0 i 1, i que correspon a la probabilitat estadística que un valor sigui possible donat que la hipòtesi nul·la sigui certa. 
+
+## Càlcul
 
 ```{r, echo=TRUE}
 
+pValueContrast <- function(x, population_mean, NC){
+  alpha <-(1-NC)
+  print(c(-qnorm(alpha/2, lower.tail = FALSE), qnorm(alpha/2, lower.tail = FALSE))) #Regió acceptació
+  n<-length(x)
+  mean<-mean(x)
+  sd<-sd(x)
+  t <- (mean-population_mean)/(sd/sqrt(n))
+  pvalue <- 2*pt(-abs(t), df = n-1)
+  pvalue
+}
+cens.income.mean <- mean(cens$income)
+pValueContrast(selfemployed$income, cens.income.mean,0.95)
+pValueContrast(selfemployed$income, cens.income.mean,0.90)
 ```
+
+## Conclusió
+
+Donat que el valor obtingunt en els dos casos es troba dins de la nostra regió d'acceptació la hipòtesis nul·la és __acceptada__. 
+
+******
+# Resum i conclusions
+******
+
+|N|    Pregunta                                         |                    Resultat                                                             |  Conclusió   |
+|-|---------------------------------------------------- | ----------------------------------------------------------------------------------------| -------------|
+|2|Interval de confiança de la mitjana d'edat al 95%    | (NC=0.95, lim_inf=38.40276,lim_sup=38.69698) (NC=0.90, lim_inf=38.4262,lim_sup=38.6733) | L'interval de confiança de la mitjana d'edat al 95% és de [38.40276,38.69698)] |
+|3|És el salari promig de les persones Self-Employed inferior al salari promig de les altres modalitats?|Regió d'acceptació=(-1.959964, 1.959964) P valor = 2.407595e-11|Acceptem la hipòtesi nul·la|
+|4|.    | .  | .  |
+|5|.    |  . | .  |
+|6|.    | .  | .  |

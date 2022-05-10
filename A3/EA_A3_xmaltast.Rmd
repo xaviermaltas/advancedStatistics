@@ -1,0 +1,49 @@
+---
+title: "A3 - Modelització predictiva"
+author: "Xavier Maltas"
+date: "Maig 2022"
+output: 
+  html_document:
+    highlight: default
+    number_sections: yes
+    theme: cosmo
+    toc: yes
+    toc_depth: 2
+    includes:
+      in_header: RMD-header.html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load_libraries, include=FALSE}
+#Imports
+library(knitr)
+if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
+```
+
+******
+# Lectura del fitxer de dades
+******
+
+```{r, echo=TRUE}
+df.raw <- read.csv("dat_Air_Stations.csv", sep=",")
+head(df.raw)
+```
+
+# Regressió lineal
+## Estudi comparatiu entre estacions
+## Model de regressió lineal
+## Model de regressió lineal múltiple
+## Diagnosi del model
+## Predicció del model
+
+# Regressó logística
+## Anàlisi cru de possibles factors de risc. Cáculo de OR
+## Model de regressió logística
+## Predicció
+## Bondat de l'ajust
+## Corba ROC
+
+# Conclusió de l'anàlisi

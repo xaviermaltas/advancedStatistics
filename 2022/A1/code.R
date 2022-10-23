@@ -1,0 +1,1 @@
+df.full <- read.csv("gpa_row.csv", sep=",")

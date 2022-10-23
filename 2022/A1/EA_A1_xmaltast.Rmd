@@ -1,0 +1,33 @@
+---
+title: "A1 - Preprocés de dades"
+author: "Xavier Maltas"
+date: "Octubre 2022"
+output: 
+  html_document:
+    highlight: default
+    number_sections: yes
+    theme: cosmo
+    toc: yes
+    toc_depth: 2
+    includes:
+      in_header: RMD-header.html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load_libraries, include=FALSE}
+library(knitr)
+```
+
+******
+# Càrrega de l'arxiu
+******
+
+En primer lloc, realitzarem la càrrega de l'arxiu que conté el Dataset a analitzar. 
+
+```{r, echo=TRUE}
+df.full <- read.csv("gpa_row.csv", sep=",")
+```
+

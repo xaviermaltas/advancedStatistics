@@ -23,13 +23,13 @@ maxMeanContaminants <- function(largeList, names){
        
   for( i in 1:length(largeList)){
   
-    # mat = matrix(NA,ncol = (length(names)*2), nrow = 365)
-    # df_target=data.frame(mat)
-  
-    mat = matrix(ncol=1, nrow=365)
-    tmp_list <- rep(list(mat),8)
-  
-    for( j in 1:length(names)){
+    # mat = matrix(ncol=1, nrow=365)
+    # tmp_list <- rep(list(mat),8)
+    
+    mat = matrix(1:2920,ncol = (length(names)*2), nrow = 365)
+    print(mat)
+
+    for(j in 1:length(names)){
       currentList<-largeList[i]
       currentName <- names[j]
   
@@ -41,23 +41,18 @@ maxMeanContaminants <- function(largeList, names){
   
       meanList <- list(computedMeanList[2])
       maxList <- list(computedMaxList[2])
-  
-      # newDF$newMeanName <- cbind(newDF,computedMeanList[2])
-      # newDF$newMaxName <- cbind(newDF,computedMaxList[2])
       
-      # newDF[ , ncol(newDF) + 1] <- computedMeanList[2]
-      # newDF[ , ncol(newDF) + 1] <- computedMaxList[2]
+      # tmp_list[[(j*2)]] <- meanList
+      # tmp_list[[((j*2)+1)]] <- maxList
       
-      # tmp_list[[(j)]]<- computedMeanList[2]
-      # tmp_list[[(j)+1]]<- computedMaxList[2]
-      # print(tmp_list)
+      # mat[,(j)] <- meanList
+      # mat[,((j)+1)] <- maxList
       
-      tmp_list[[j]] <- meanList
-      tmp_list[[j+1]] <- maxList
     }
-    print(tmp_list)
-    newDF <- data.frame(tmp_list)
-    newLargeList[i] <- newDF
+    print(mat)
+    # print(tmp_list)
+    # newDF <- as.data.frame(tmp_list)
+    # newLargeList[i] <- newDF
   }
   return(newLargeList)
 }

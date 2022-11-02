@@ -1,6 +1,6 @@
 ---
 title: "A1 - Preprocés de dades"
-author: "Xavier Maltas"
+author: "Xavier Maltas Tarridas"
 date: "Octubre 2022"
 output: 
   html_document:
@@ -18,16 +18,282 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r load_libraries, include=FALSE}
+#Imports
 library(knitr)
+if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
+if (!require('plyr')) install.packages('plyr'); library('plyr')
+if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
 ```
-
 ******
 # Càrrega de l'arxiu
 ******
 
-En primer lloc, realitzarem la càrrega de l'arxiu que conté el Dataset a analitzar. 
+En primer lloc, realitzem la càrrega de l'arxiu que conté el conjunt de dades a analitzar. 
 
 ```{r, echo=TRUE}
-df.full <- read.csv("gpa_row.csv", sep=",")
+df.raw <- read.csv("gpa_row.csv", sep=",")
 ```
 
+Un cop disposem del dataset carregat, elaborem un breu estudi de les dades d'entrada obtenint les dimensions del conjunt, l'estructura i contingut.
+
+```{r, echo=TRUE}
+print(paste("Dataset contains", nrow(df.raw), "registers"))
+```
+
+La primera instrucció ens permet observar que disposem d'un total de 4137 registres. 
+
+```{r, echo=TRUE}
+dim(df.raw)
+str(df.raw)
+head(df.raw)
+summary(df.raw)
+sapply(df.raw,class)
+```
+
+A continuació, veiem que cada un d'aquests registres es compon de 10 atributs. La interpretació del tipus de les dades segons R és errònia, ja que considera que una gran majoria són de tipus _character_. Observant el conjunt de dades, és fàcil concloure que aquestes són principalment de tipus _logical_ i _numeric_. Per altra banda, també disposem d'un petit resum de com es distribueix cada atribut, així com una petita mostra del conjunt de dades entrant.
+
+Finalment, observarem que disponem de registres amb valors indefinits a l'atribut _'colgpa'_. Generem un DataFrame independent que conté tots els registres amb valors indefinits. 
+
+```{r, echo=TRUE}
+colSums(is.na(df.raw))
+row.has.na <- apply(df.raw, 1, function(x){any(is.na(x))})
+df.with.na <- df.raw[row.has.na,]
+#df.with.na
+```
+
+******
+# Normalització de les variables qualitatives
+******
+
+Com hem comentat en l'apartat anterior, la interpretació del tipus de les dades segons R és errònia. En aquest apartat, realitzarem la transformació corresponent de les variables qualitatives del nostre conjunt de dades. Aquestes variables són: _athlete_, _female_, _white_ i _black_.
+
+Prèviament, realitzarem una còpia del dataset original, i sobre aquest segon aplicarem totes les transformacions de normalització.
+
+```{r, echo=TRUE}
+## Duplicate df to do the cleaning tasks
+df.clean <- df.raw
+```
+
+## Athlete
+
+El tipus de la variable _athlete_ és _character_. A la vegada, podem veure que els valors únics d'aquest atribut, són més dels esperats. És per aquest motiu, que, en primer lloc, haurem de modificar aquests valors per tal de només tenir _'TRUE'_ i _'FALSE'_, i finalment codificar les variables com a tipus _'factor'_.
+
+```{r, echo=TRUE}
+typeof(df.clean$athlete)
+unique(df.clean$athlete)
+#Revalue to unique 
+df.clean$athlete <- revalue (x = df.clean$athlete, c("true"="TRUE", "false"="FALSE"))
+unique(df.clean$athlete)
+```
+
+Un cop disposem de valors únics, realitzarem la transformació cap a valors de tipus _'logical'_ i per acabar, codificarem la variable categòrica com a tipus _'factor'_ tal com indica l'enunciat. 
+
+```{r, echo=TRUE}
+#Cast to Logical data type
+castToLogical <- function(data){
+  data <- as.logical(data)
+}
+
+df.clean$athlete <- castToLogical(df.clean$athlete)
+#checking if its logical
+typeof(df.clean$athlete)
+unique(df.clean$athlete)
+
+#Cast to Factor vectors
+factorVectorGeneration <- function(data){
+  f <- factor(data)
+}
+df.clean$athlete <- factorVectorGeneration(df.clean$athlete)
+
+#Checking Factor
+typeof(df.clean$athlete)
+unique(df.clean$athlete)
+levels(df.clean$athlete)
+nlevels(df.clean$athlete)
+sapply(df.clean,class)
+```
+
+
+## Female
+
+Inicialment fem un anàlisi del tipus de dada i dels valors que ens apareixen en l'artibut _'female'_. Veiem que és de tipus _'logical'_ i que no disposem d'elements repetits que representin el mateix.
+
+```{r, echo=TRUE}
+#Type and unique checking
+typeof(df.clean$female)
+unique(df.clean$female)
+```
+
+A continuació relaitzem una transformació dels valors de tipus _'logical'_ a _'factor'_ mitjançant la funció que hem creat anteriorment. Finalment, realitzem una comprovació de que les transformacions s'han realitzat de forma correcta. 
+
+```{r, echo=TRUE}
+#Transform to factor
+df.clean$female <- factorVectorGeneration(df.clean$female)
+
+#Checking Factor
+typeof(df.clean$female)
+levels(df.clean$female)
+nlevels(df.clean$female)
+sapply(df.clean,class)
+```
+
+
+## White
+
+El tipus de la variable _white_ és _character_. També podem observar que hi ha valors que representen el mateix, expressats de diferents formes. Modifiquem els valors per tal d'obtenir valors únics, i finalment codificar les variables com a tipus _'factor'_.
+
+```{r, echo=TRUE}
+#Type and unique checking
+typeof(df.clean$white)
+unique(df.clean$white)
+
+#Revalue to unique 
+df.clean$white <- revalue (x = df.clean$white, c("true"="TRUE","TRUE   "="TRUE", "  TRUE"="TRUE" ,"false"="FALSE"))
+unique(df.clean$white)
+
+#Cast to Logical
+df.clean$white <- castToLogical(df.clean$white)
+typeof(df.clean$white)
+unique(df.clean$white)
+
+#Transform to factor
+df.clean$white <- factorVectorGeneration(df.clean$white)
+
+#Checking Factor
+typeof(df.clean$white)
+levels(df.clean$white)
+nlevels(df.clean$white)
+sapply(df.clean,class)
+```
+
+
+## Black
+
+El tipus de la variable _black_ és _character_. Trobem que hi ha valors que representen el mateix, expressats de diferents formes. Modifiquem els valors per tal d'obtenir valors únics, i finalment codificar les variables com a tipus _'factor'_.
+
+```{r, echo=TRUE}
+#Type and unique checking
+typeof(df.clean$black)
+unique(df.clean$black)
+#Revalue to unique 
+df.clean$black <- revalue (x = df.clean$black, c( "TRUE   "="TRUE", "false"="FALSE", "  FALSE"="FALSE", "FALSE   "="FALSE"))
+unique(df.clean$black)
+#Cast to Logical
+df.clean$black <- castToLogical(df.clean$black)
+typeof(df.clean$black)
+unique(df.clean$black)
+#Transform to factor
+df.clean$black <- factorVectorGeneration(df.clean$black)
+#Checking Factor
+typeof(df.clean$black)
+levels(df.clean$black)
+nlevels(df.clean$black)
+sapply(df.clean,class)
+```
+
+******
+# Normalització de les variables quantitatives
+******
+En aquest apartat inspeccionarem i realitzarem la normalització de les dades de tipus quantitatiu, és a dir, de les variables: _'sat'_, _'tothrs'_, _'hsize'_, _'hsrank'_, _'hsperc'_ i _'colgpa'_.
+
+## Nota d'accés
+
+Analitzant la variable _'sat'_ podem veure que és de tipus _'integer'_ i que tots els registres tenen valors i es troben entre el range de 400 i 1600 punts. Finalment, apliquem una funció per tal de fer la transformació a tipus de dades _'numeric'_.
+
+```{r, echo=TRUE}
+#Type checking
+sapply(df.clean,class)
+#Range values
+summary(df.clean$sat)
+#There is no NA value
+any(is.na(df.clean$sat))
+#Cast to numeric
+castToNumeric <- function(data){
+  num <- as.numeric(data)
+}
+#Checking type
+sapply(df.clean,class)
+head(df.clean)
+```
+
+## Hores totals cursades al semestre
+
+El tipus retornat de la variable _'tothrs'_ és _'character'_. Observant que es tracta d'una variable quantitativa, hem de realitzar una conversió a tipus _'numeric'_. Per dur a terme aquesta transformació creem una funció que elimini la unitat de la variable, converteixi les comes en punts i faci un cast a tipus _'numeric'_.
+
+```{r, echo=TRUE}
+#Type checking
+sapply(df.clean,class)
+#There is no NA value
+any(is.na(df.clean$sat))
+
+#Transform without units, comma -> dot and numeric datatype
+cleanAndExtractNum <- function(row){
+  num <- gsub("[a-zA-Z ]", "", row) #Elimiem caracters
+  num <- as.numeric(gsub(",", ".",num)) #Comma to dot, to numeric
+}
+df.clean$tothrs <- cleanAndExtractNum(df.clean$tothrs)
+
+#Checking type
+sapply(df.clean,class)
+head(df.clean)
+```
+
+## Nota mitjana de l’estudiant al final del primer semestre
+
+Realitzant un breu anàlisi de la variable _'colgpa'_ podem veure que el tipus de dada és _'numeric'_. Els registres que tenen valors es troben entre el rang especificat de 0 a 4, tot i que també podem observar que hi ha valors indefinits. 
+
+
+```{r, echo=TRUE}
+#Type checking
+sapply(df.clean,class)
+#There is NA value
+any(is.na(df.clean$colgpa))
+#Na values df
+row.has.na <- apply(df.raw, 1, function(x){any(is.na(x))})
+df.with.na <- df.raw[row.has.na,]
+
+#Range values
+summary(df.clean$colgpa)
+#Checking type
+sapply(df.clean,class)
+head(df.clean)
+```
+
+
+## Nombre total d’estudiants a la cohort de graduats del batxillerat
+
+Observem que la variable _'hsize'_ és de tipus _'character'_. És per aquest motiu que apliquem una funció que ens permeti aplicar una transformació a tipus _'numeric'_. 
+
+```{r, echo=TRUE}
+#Type checking
+sapply(df.clean,class)
+
+#Cast to numeric
+df.clean$hsize <- castToNumeric(df.clean$hsize)
+
+#Checking type
+sapply(df.clean,class)
+head(df.clean)
+```
+
+
+## Rànquing relatiu de l’estudiant
+
+La variable _'hsperc'_ és de tipus _'numeric'_, és a dir, que es troba en datatype correcte. Tot i això, realitzarem una transformació per tal de quedar-nos amb només 3 xifres significatives dels decimals.
+ 
+```{r, echo=TRUE}
+#Type checking
+sapply(df.clean,class)
+
+#Round 3 digits
+df.clean$hsperc <- round(df.clean$hsperc, digits=3)
+
+#Checking type
+sapply(df.clean,class)
+head(df.clean)
+```
+
+
+******
+# Valors atípics
+******

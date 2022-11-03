@@ -23,6 +23,7 @@ library(knitr)
 if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
 if (!require('plyr')) install.packages('plyr'); library('plyr')
 if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
+if (!require('VIM')) install.packages('VIM'); library('VIM')
 ```
 ******
 # Càrrega de l'arxiu

@@ -495,6 +495,7 @@ write.csv(df,"gpa_clean.csv", row.names = TRUE)
 ******
 # Informe executiu
 ******
+## Taula resum del preprocessament
 
 ```{r, echo=TRUE}
 #idx var
@@ -520,4 +521,21 @@ table.preproc <- kable(data.frame(Variables=names(df.clean[idx.var]),
 ),
 digits=2, caption="Table")
 table.preproc
+```
+
+## Resum estadístic
+
+Després d'haver realitzat la preparació i una breu anàlisi de les dades d'entrada, podem observar que demogràficament hi ha una major quantitat d'homes que de dones, igual que la població negra és pràcticament una minoria. A la vegada, el percentatge d'estudiants que són atletes, hi ha un percentatge major en els homes que en el de les dones.
+Pel que fa a la nota d'accés, aquesta es troba principalment concentrada al voltant dels 1000 punts. Les hores cursades durant el primer semestre es troben bastant segmentades en 4 zones corresponents a: 20h/50h/80h i +100h.
+
+```{r, echo=TRUE}
+#Extra
+sum(df.clean$female == TRUE)
+sum(df.clean$black == TRUE)
+ggplot(df.clean, aes(x = tothrs)) +
+  geom_density(fill = "indianred3") + 
+  labs(title = "tothrs Distribution")
+ggplot(df.clean, aes(x = sat)) +
+  geom_density(fill = "indianred3") + 
+  labs(title = "sat Distribution")
 ```

@@ -375,3 +375,14 @@ table.preproc <- kable(data.frame(Variables=names(df.clean[idx.var]),
 ),
 digits=2, caption="Table")
 table.preproc
+
+
+
+sum(df.clean$female == TRUE)
+sum(df.clean$black == TRUE)
+ggplot(df.clean, aes(x = tothrs)) +
+  geom_density(fill = "indianred3") + 
+  labs(title = "tothrs Distribution")
+ggplot(df.clean, aes(x = sat)) +
+  geom_density(fill = "indianred3") + 
+  labs(title = "sat Distribution")

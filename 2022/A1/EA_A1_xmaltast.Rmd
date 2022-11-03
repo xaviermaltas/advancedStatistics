@@ -20,8 +20,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r load_libraries, include=FALSE}
 #Imports
 library(knitr)
-if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
 if (!require('plyr')) install.packages('plyr'); library('plyr')
+if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
 if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
 if (!require('VIM')) install.packages('VIM'); library('VIM')
 ### https://cran.r-project.org/web/packages/mappings/mappings.pdf
@@ -359,7 +359,7 @@ El primer pas a realitzar, és saber quines variables tenen valors perduts per t
 colSums(is.na(df.clean))
 ```
 
-Observem que només hi ha valors perduts a la variable _'colgpa'_. És per això que a continuació aplicarem la funció _'kNN'_ utilitzant les variàbles quantitatives del mateix gènere. 
+Observem que només hi ha valors perduts a la variable _'colgpa'_. És per això que a continuació aplicarem la funció _'kNN'_ utilitzant les variables quantitatives del mateix gènere. 
 
 ```{r, echo=TRUE}
 #Obtenim les variables quantitatives
@@ -388,4 +388,136 @@ df.clean[mas.idx,]$colgpa <- new.mas[new.mas$colgpa_imp==TRUE,]$colgpa
 
 #Check that there is no NA values
 colSums(is.na(df.clean))
+```
+
+Un cop executat l'algorisme tenint en compte les variables qualitatives del mateix gènere, podem obsercar que no tenim més valors perduts.
+
+******
+# Creació d'una nova variable
+******
+
+Hem de crear una nova variable anomenada _'gpaletter'_. Per obtenir aquest valor hem de realitzar un mapping per intervals de la variable _'colgpa'_.
+
+```{r, echo=TRUE}
+#Import library
+library('mappings')
+#Setting intervals
+gpaletter_intervals <- c(0,1.50, 2.50, 3.50, 4.01)
+#Creating mapping function
+m <- cut_mapping(gpaletter_intervals, right=FALSE, to=c("D", "C", "B", "A"))
+#print function
+print(m)
+#Applying function to generate new param
+df.clean$gpaletter<- m(df.clean$colgpa)
+#Checking new var
+head(df.clean)
+```
+
+******
+# Estudi descriptiu
+******
+
+## Estudi descriptiu de les variables qualitatives
+
+En primer lloc es demanar representar de forma gràfica el percentatge d'atletes. En aquest observem que la gran majoria de la mostra no ho són.
+
+```{r, echo=TRUE}
+athlete_table <- table(df.clean$athlete)
+rownames(athlete_table) = c("No athlete", "Athlete")
+barplot(athlete_table, main="Athlete - No Athlete Distribution")
+```
+
+A continuació, se'ns demana representar quin és el percentatge atletes tenint en compte el gènere de les persones. Observem que el percentatge d'atletes és major en els homes que en les dones. 
+```{r, echo=TRUE}
+library('plyr')
+library('dplyr')
+#DF creation
+df.femaleAthlete <- df.clean %>% 
+  group_by( female , athlete) %>% 
+  dplyr::summarise(counts = n())
+
+df.femaleAthlete
+
+#Plot
+ggplot(df.femaleAthlete, aes(y = female, x = counts)) +
+  geom_bar(
+    aes(fill = athlete),
+    stat = "identity", position = position_stack()
+  ) + geom_text(aes(label=counts))
+```
+
+## Estudi descriptiu de les variables quantitatives
+
+Per a realitzar l'estudi descriptiu de les variables quantitatives realitzarem una taula amb diverses mesures.
+
+```{r, echo=TRUE}
+#index quantitative var
+idx.quant <- c("sat","tothrs","hsize","hsrank","hsperc","colgpa")
+#measures
+mean <- as.vector(sapply(df.clean[,idx.quant], mean, na.rm=TRUE))
+sd <- as.vector(sapply(df.clean[,idx.quant], sd, na.rm=TRUE))
+median <- as.vector(sapply(df.clean[,idx.quant], median, na.rm=TRUE))
+IQR <- as.vector(sapply(df.clean[,idx.quant],IQR, na.rm=TRUE))
+
+#table creation
+table.quant <- kable(data.frame(Variables=names(df.clean[idx.quant]),
+                      Mean = mean,
+                      StandardDeviation = sd,
+                      Median = median,
+                      IQR = IQR
+                      ),
+                digits=2, caption="Table")
+table.quant
+```
+
+A continuació, presentarem gràfics per visualitzar la distribució de la variable _'sat'_ i _'sat'_ en funció del sexe. 
+
+```{r, echo=TRUE}
+#sat Box plot
+boxplot(df.clean$sat, main="Sat Distribution")
+
+#sat Box plot by gender 
+boxplot(data = df.clean, sat~female, main="Sat Distribution by Gender", names=c("men","female"))
+```
+
+
+******
+# Arxiu final
+******
+
+Un cop realitzat el processament sobre l'arxiu, guardarem les dades dins d'un fitxer anomenant _'gpa_clean.csv'_.
+
+```{r, echo=TRUE}
+write.csv(df,"gpa_clean.csv", row.names = TRUE)
+```
+
+
+******
+# Informe executiu
+******
+
+```{r, echo=TRUE}
+#idx var
+idx.var <- c("sat","tothrs","colgpa","hsize","hsrank","hsperc", "athlete", "female", "white", "black", "gpaletter")
+#modificacio per each var
+mod.var <- c( "Validació dins del rang establert. Transformació a tipus 'numeric'.",
+              "Variable inicialment de tipus 'character'. Extracció de les unitats, reemplaç de la coma pel punt decimal, transformació a tipus 'numeric' i arrodoniment de decimals.",
+              "Variable inicialment amb valor perduts. Cerca a través de l'algorisme _'kNN'_ aplicant la distància de Gower.",
+              "Variable inicialment de tipus 'character'. Reemplaç de la coma pel punt decimal, transformació a tipus 'numeric' i arrodoniment de decimals.",
+              "-",
+              "Arrodoniment de decimals",
+              "Variable inicialment de tipus 'character'. Estandarització dels valors únics i transformació a tipus 'factor'.",
+              "Variable inicialment de tipus 'logical'. Transformació a tipus 'factor'.",
+              "Variable inicialment de tipus 'character'. Estandarització dels valors únics i transformació a tipus 'factor'.",
+              "Variable inicialment de tipus 'character'. Estandarització dels valors únics i transformació a tipus 'factor'.",
+              "Creació de la variable mitjançant la variable _'colgpa'_ i uns intervals de valoració."
+              )
+
+
+#table creation
+table.preproc <- kable(data.frame(Variables=names(df.clean[idx.var]),
+                                  Modificació = mod.var
+),
+digits=2, caption="Table")
+table.preproc
 ```

@@ -246,14 +246,15 @@ fem.idx <- which(is.na(df.clean$colgpa) & df.clean$female==TRUE); fem.idx
 mas.idx <- which(is.na(df.clean$colgpa) & df.clean$female==FALSE); mas.idx
 
 ##compute fem new registers
-new.fem<- kNN( df.clean[ df.clean$female==TRUE, quant.variables], variable="colgpa", k=11)
+library(Rcpp)
+new.fem <- kNN( df.clean[ df.clean$female==TRUE, quant.variables], variable="colgpa", k=11)
 df.clean[fem.idx, quant.variables]
 new.fem[new.fem$colgpa_imp==TRUE,]
 #set new values to df
 df.clean[fem.idx,]$colgpa <- new.fem[new.fem$colgpa_imp==TRUE,]$colgpa
 
 ##compute men new registers
-new.mas<- kNN( df.clean[ df.clean$female==FALSE, quant.variables], variable="colgpa", k=11)
+new.mas <- kNN( df.clean[ df.clean$female==FALSE, quant.variables], variable="colgpa", k=11)
 df.clean[mas.idx, quant.variables]
 new.mas[new.mas$colgpa_imp==TRUE,]
 #set new values to df
@@ -268,18 +269,104 @@ boxplot(df.clean$colgpa)
 #******
 #6 - Creació d'una nova variable
 #******
+
 library('mappings')
-gpaletter_intervals <- c(0,1.49, 2.49, 3.49, 4.01)
+gpaletter_intervals <- c(0,1.50, 2.50, 3.50, 4.01)
 m <- cut_mapping(gpaletter_intervals, right=FALSE, to=c("D", "C", "B", "A"))
 print(m)
 df.clean$gpaletter<- m(df.clean$colgpa)
 
 #******
-#/ - Estudi descriptiu
+#7 - Estudi descriptiu
 #******
+
 ## 7.1 Estudi descriptiu de les variables qualitatives
 
-pie(table(df.clean$athlete), main="Athlete")
+### athlete
+library('ggplot2')
+athlete_table <- table(df.clean$athlete)
+rownames(athlete_table) = c("No athlete", "Athlete")
+barplot(athlete_table, main="Athlete - No Athlete Distribution")
 
+
+### athlete and female
+files=dim(df.clean)[1]
+ggplot(data=df.clean[1:files,],aes(x=female,fill=athlete))+geom_bar() 
+
+
+
+library('plyr')
+library('dplyr')
+df.femaleAthlete <- df.clean %>% 
+  group_by( female , athlete) %>% 
+  dplyr::summarise(counts = n())
+
+df.femaleAthlete
+
+#Plot
+ggplot(df.femaleAthlete, aes(y = female, x = counts)) +
+  geom_bar(
+    aes(fill = athlete),
+    stat = "identity", position = position_stack()
+  ) + geom_text(aes(label=counts))
 
 ##7.2 Estudi descriptiu de les variables quantitatives
+
+#index quantitative var
+idx.quant <- c("sat","tothrs","hsize","hsrank","hsperc","colgpa")
+#measures
+mean <- as.vector(sapply(df.clean[,idx.quant], mean, na.rm=TRUE))
+sd <- as.vector(sapply(df.clean[,idx.quant], sd, na.rm=TRUE))
+median <- as.vector(sapply(df.clean[,idx.quant], median, na.rm=TRUE))
+IQR <- as.vector(sapply(df.clean[,idx.quant],IQR, na.rm=TRUE))
+
+#table creation
+table.quant <- kable(data.frame(Variables=names(df.clean[idx.quant]),
+                      Mean = mean,
+                      StandardDeviation = sd,
+                      Median = median,
+                      IQR = IQR
+                      ),
+                digits=2, caption="Table")
+table.quant
+
+#sat Box plot
+boxplot(df.clean$sat, main="Sat Distribution")
+
+#sat Box plot by gender 
+boxplot(data = df.clean, sat~female, main="Sat Distribution by Gender", names=c("men","female"))
+
+
+
+#******
+#8 - Arxiu final
+#******
+
+write.csv(df,"gpa_clean.csv", row.names = TRUE)
+
+#******
+#9 - Informe executiu
+#******
+#idx var
+idx.var <- c("sat","tothrs","colgpa","hsize","hsrank","hsperc", "athlete", "female", "white", "black", "gpaletter")
+#modificacio per each var
+mod.var <- c( "Validació dins del rang establert. Transformació a tipus 'numeric'.",
+              "Variable inicialment de tipus 'character'. Extracció de les unitats, reemplaç de la coma pel punt decimal, transformació a tipus 'numeric' i arrodoniment de decimals.",
+              "Variable inicialment amb valor perduts. Cerca a través de l'algorisme _'kNN'_ aplicant la distància de Gower.",
+              "Variable inicialment de tipus 'character'. Reemplaç de la coma pel punt decimal, transformació a tipus 'numeric' i arrodoniment de decimals.",
+              "-",
+              "Arrodoniment de decimals",
+              "Variable inicialment de tipus 'character'. Estandarització dels valors únics i transformació a tipus 'factor'.",
+              "Variable inicialment de tipus 'logical'. Transformació a tipus 'factor'.",
+              "Variable inicialment de tipus 'character'. Estandarització dels valors únics i transformació a tipus 'factor'.",
+              "Variable inicialment de tipus 'character'. Estandarització dels valors únics i transformació a tipus 'factor'.",
+              "Creació de la variable mitjançant la variable _'colgpa'_ i uns intervals de valoració."
+              )
+
+
+#table creation
+table.preproc <- kable(data.frame(Variables=names(df.clean[idx.var]),
+                                  Modificació = mod.var
+),
+digits=2, caption="Table")
+table.preproc

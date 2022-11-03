@@ -4,6 +4,11 @@ if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
 if (!require('plyr')) install.packages('plyr'); library('plyr')
 if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
 if (!require('VIM')) install.packages('VIM'); library('VIM')
+if(!require('mappings'))
+  install.packages('remotes')
+library('remotes')
+remotes::install_github("benjaminrich/mappings")
+library(mappings)
 
 #******
 #1 - Carrega de l'arxiu

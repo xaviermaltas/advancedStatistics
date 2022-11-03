@@ -224,7 +224,7 @@ ggplot(df.clean, aes(x = hsize)) +
 # df.with.na <- df.raw[row.has.na,]
 # df.with.na
 # 
-# colSums(is.na(df.clean))
+colSums(is.na(df.clean))
 # 
 # #mean way
 # idx <- which(is.na(df.clean$colgpa))
@@ -245,12 +245,17 @@ mas.idx <- which(is.na(df.clean$colgpa) & df.clean$female==FALSE); mas.idx
 ##fem registers
 new.fem<- kNN( df.clean[ df.clean$female==TRUE, quant.variables], variable="colgpa", k=11)
 df.clean[fem.idx, quant.variables]
-new.fem[new.fem$colgpa==TRUE,]
+new.fem[new.fem$colgpa_imp==TRUE,]
 df.clean[fem.idx,]$colgpa <- new.fem[new.fem$colgpa_imp==TRUE,]$colgpa
 
 
 ##men registers
 new.mas<- kNN( df.clean[ df.clean$female==FALSE, quant.variables], variable="colgpa", k=11)
 df.clean[mas.idx, quant.variables]
+new.mas[new.mas$colgpa_imp==TRUE,]
 df.clean[mas.idx,]$colgpa <- new.mas[new.mas$colgpa_imp==TRUE,]$colgpa
 
+colSums(is.na(df.clean))
+
+
+boxplot(df.clean$colgpa)

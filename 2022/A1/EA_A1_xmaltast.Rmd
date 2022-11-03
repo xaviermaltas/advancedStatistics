@@ -262,14 +262,14 @@ head(df.clean)
 
 ## Nombre total d’estudiants a la cohort de graduats del batxillerat
 
-Observem que la variable _'hsize'_ és de tipus _'character'_. És per aquest motiu que apliquem una funció que ens permeti aplicar una transformació a tipus _'numeric'_. 
+Observem que la variable _'hsize'_ és de tipus _'character'_. És per aquest motiu que apliquem una funció que ens permeti convertir les comes en punts i faci un cast a tipus _'numeric'_.
 
 ```{r, echo=TRUE}
 #Type checking
 sapply(df.clean,class)
 
 #Cast to numeric
-df.clean$hsize <- castToNumeric(df.clean$hsize)
+df.clean$hsize <- cleanAndExtractNum(df.clean$hsize)
 
 #Checking type
 sapply(df.clean,class)
@@ -297,3 +297,59 @@ head(df.clean)
 ******
 # Valors atípics
 ******
+
+En aquest apartat revisarem si hi ha valors atípics a les variables _'sat'_ i _'hsize'_. En primer lloc observarem si hi ha valors nulls. A continuació, comprovarem si hi ha valors anormalment fora dels rangs, i en cas de ser així, substituirem el seu valor per NA.
+
+## sat
+
+En primer lloc realitzem un anàlisi de la distribució de les dades. 
+
+```{r, echo=TRUE}
+#Range values
+summary(df.clean$sat)
+#Box plot
+boxplot(df.clean$sat)
+#Density distribution
+ggplot(df.clean, aes(x = sat)) +
+  geom_density(fill = "indianred3") + 
+  labs(title = "sat Distribution")
+
+# #Set NA out of range
+df.clean$sat[ 0 > df.clean$sat || df.clean$sat > 1600 ] <- NA
+#Check if exist new NAs
+sum(is.na(df.clean$sat))
+```
+
+Un cop observada la distribució de les dades i aplicar un filtre amb els rangs establerts, podem veure que no hi havia cap valor fora d'aquestes, ja no hi ha cap valor NA. 
+
+## hsize
+
+Elaborem una anàlisi de la distribució de les dades. Observem que hi ha molts valors atípics (169), tot i això, no es canvien, ja que no es consideren valors anòmals.
+
+```{r, echo=TRUE}
+#Range values
+summary(df.clean$hsize)
+#Box plot
+boxplot(df.clean$hsize)
+hsize.out<-boxplot.stats(df.clean$hsize)$out
+length(hsize.out)
+sort(hsize.out)[1:169]
+sum(df.clean$hsize>7)
+#Density distribution
+ggplot(df.clean, aes(x = hsize)) +
+  geom_density(fill = "indianred3") + 
+  labs(title = "hsize Distribution")
+```
+
+******
+#  Imputació de valors
+******
+
+El primer pas a realitzar, és saber quines variables tenen valors perduts per tal de realitzar una imputació posterior mitjançant el còmput dels veïns aplicant la distància de Gower.
+
+```{r, echo=TRUE}
+#Get num of NA values per each column
+colSums(is.na(df.clean))
+```
+
+Observem que només hi ha valors perduts a la variable _'colgpa'_. És per això que a continuació aplicarem la funció _'kNN'_ utilitzant les variàbles quantitatives del mateix gènere. 

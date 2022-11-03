@@ -163,9 +163,8 @@ summary(df.clean$colgpa)
 #Type checking
 sapply(df.clean,class)
 #Cast to numeric
-df.clean$hsize <- castToNumeric(df.clean$hsize)
+df.clean$hsize <- cleanAndExtractNum(df.clean$hsize)
 
-colSums(is.na(df.raw))
 sapply(df.clean,class)
 
 
@@ -177,8 +176,40 @@ df.clean$hsperc <- round(df.clean$hsperc, digits=3)
 #Checking type
 sapply(df.clean,class)
 head(df.clean)
+colSums(is.na(df.clean))
 
 
 #******
 #4 - Valors atípics
 #******
+##sat
+#Range values
+summary(df.clean$sat)
+#Box plot
+boxplot(df.clean$sat)
+#Density distribution
+ggplot(df.clean, aes(x = sat)) +
+  geom_density(fill = "indianred3") + 
+  labs(title = "sat Distribution")
+
+# #Set NA out of range
+df.clean$sat[ 0 > df.clean$sat || df.clean$sat > 1600 ] <- NA
+#Check if exist new NAs
+sum(is.na(df.clean$sat))
+
+
+
+
+##hsize
+#Range values
+summary(df.clean$hsize)
+#Box plot
+boxplot(df.clean$hsize)
+hsize.out<-boxplot.stats(df.clean$hsize)$out
+length(hsize.out)
+sort(hsize.out)[1:169]
+sum(df.clean$hsize>7)
+#Density distribution
+ggplot(df.clean, aes(x = hsize)) +
+  geom_density(fill = "indianred3") + 
+  labs(title = "Age Distribution")

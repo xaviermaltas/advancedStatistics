@@ -259,3 +259,21 @@ colSums(is.na(df.clean))
 
 
 boxplot(df.clean$colgpa)
+
+#******
+#6 - Creació d'una nova variable
+#******
+library('mappings')
+gpaletter_intervals <- c(0,1.49, 2.49, 3.49, 4.01)
+m <- cut_mapping(gpaletter_intervals, right=FALSE, to=c("D", "C", "B", "A"))
+print(m)
+df.clean$gpaletter<- m(df.clean$colgpa)
+
+#******
+#/ - Estudi descriptiu
+#******
+## 7.1 Estudi descriptiu de les variables qualitatives
+
+
+
+##7.2 Estudi descriptiu de les variables quantitatives

@@ -232,8 +232,11 @@ colSums(is.na(df.clean))
 # df.clean$colgpa[idx] <- round(mean(df.clean$colgpa, na.rm=TRUE))
 # df.clean$colgpa[idx]
 
+
+#Obtenim les variables quantitatives
 quant.variables <- which( colnames(df.clean) %in% c("sat","tothrs","hsize","hsrank","hsperc","colgpa"))
 quant.variables
+#Obtenim els indexs dels valors NA 
 idx <- which( is.na(df.clean$colgpa))
 idx
 
@@ -242,19 +245,21 @@ fem.idx <- which(is.na(df.clean$colgpa) & df.clean$female==TRUE); fem.idx
 ##men idx 
 mas.idx <- which(is.na(df.clean$colgpa) & df.clean$female==FALSE); mas.idx
 
-##fem registers
+##compute fem new registers
 new.fem<- kNN( df.clean[ df.clean$female==TRUE, quant.variables], variable="colgpa", k=11)
 df.clean[fem.idx, quant.variables]
 new.fem[new.fem$colgpa_imp==TRUE,]
+#set new values to df
 df.clean[fem.idx,]$colgpa <- new.fem[new.fem$colgpa_imp==TRUE,]$colgpa
 
-
-##men registers
+##compute men new registers
 new.mas<- kNN( df.clean[ df.clean$female==FALSE, quant.variables], variable="colgpa", k=11)
 df.clean[mas.idx, quant.variables]
 new.mas[new.mas$colgpa_imp==TRUE,]
+#set new values to df
 df.clean[mas.idx,]$colgpa <- new.mas[new.mas$colgpa_imp==TRUE,]$colgpa
 
+#Check that there is no NA values
 colSums(is.na(df.clean))
 
 
@@ -274,6 +279,7 @@ df.clean$gpaletter<- m(df.clean$colgpa)
 #******
 ## 7.1 Estudi descriptiu de les variables qualitatives
 
+pie(table(df.clean$athlete), main="Athlete")
 
 
 ##7.2 Estudi descriptiu de les variables quantitatives

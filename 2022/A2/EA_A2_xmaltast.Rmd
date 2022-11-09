@@ -1,0 +1,44 @@
+---
+title: "A2 - Anàlisi estadística I"
+author: "Xavier Maltas Tarridas"
+date: 'Novembre 2022'
+output: 
+  html_document:
+    highlight: default
+    number_sections: yes
+    theme: cosmo
+    toc: yes
+    toc_depth: 2
+    includes:
+      in_header: RMD-header.html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load_libraries, include=FALSE}
+#Imports
+library(knitr)
+if (!require('plyr')) install.packages('plyr'); library('plyr')
+if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
+if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
+if (!require('VIM')) install.packages('VIM'); library('VIM')
+```
+
+******
+# Lectura del fitxer
+******
+
+```{r, echo=TRUE}
+#Load file
+df.clean <- read.csv("gpa_clean.csv", sep=",")
+
+#Summary input file/df
+dim(df.clean)
+str(df.clean)
+head(df.clean)
+summary(df.clean)
+sapply(df.clean,class)
+```
+

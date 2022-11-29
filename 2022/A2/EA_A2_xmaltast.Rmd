@@ -23,6 +23,7 @@ library(knitr)
 if (!require('plyr')) install.packages('plyr'); library('plyr')
 if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
 if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
+if (!require('gridExtra')) install.packages('gridExtra'); library('gridExtra')
 if (!require('VIM')) install.packages('VIM'); library('VIM')
 ```
 
@@ -32,13 +33,238 @@ if (!require('VIM')) install.packages('VIM'); library('VIM')
 
 ```{r, echo=TRUE}
 #Load file
-df.clean <- read.csv("gpa_clean.csv", sep=",")
-
-#Summary input file/df
-dim(df.clean)
-str(df.clean)
-head(df.clean)
-summary(df.clean)
-sapply(df.clean,class)
+df <- read.csv("gpa_clean.csv", sep=",")
 ```
 
+
+******
+# Estadística descriptiva i visualització
+******
+
+## Anàlisi descriptiva
+
+Seguidament, podem observar un sumari dels valors de les variables numèriques i categòriques.
+
+```{r, echo=TRUE}
+##DF descriptive analysis
+#Dimensions
+dim(df)
+#df structure
+str(df)
+#Head data sample
+head(df)
+#Summary
+summary(df)
+#Class per each var
+sapply(df,class)
+```
+
+
+## Visualització
+
+### Distribucions individuals
+
+#### Distribució de la variable _'sat'_
+
+Visualització de la distribució de la variable _'sat'_.
+
+```{r, echo=TRUE}
+# sat distribution
+ggplot( df, aes(x=sat)) +
+  geom_histogram( aes(y=..density..), colour="black", fill="lightblue")+
+  geom_density(alpha=.2, fill="indianred3") + 
+  labs(title = "sat Distribution")
+```
+
+
+
+#### Distribució de la variable _'colgpa'_
+
+Visualització de la distribució de la variable _'colgpa'_.
+
+```{r, echo=TRUE}
+#colgpa distribution
+
+#discrete var creation
+discrete.colgpa <- df$colgpa
+#plot
+ggplot( df, aes(x=discrete.colgpa)) +
+  geom_histogram( aes(y=..density..), colour="black", fill="lightblue")+
+  geom_density(alpha=.2, fill="indianred3") + 
+  labs(title = "sat Distribution")
+```
+
+### Distribucions sobre _'sat'_
+
+#### Distribució _'sat'_ per _'female'_
+
+
+Visualització de la distribució de la variable _'sat'_ en funció del gènere, variable _'female'_.
+
+```{r, echo=TRUE}
+##sat-female
+df.female <- df %>% filter(female == TRUE)
+df.male <- df %>% filter(female == FALSE)
+#female
+satfemale.ggplot <- ggplot( df.female, aes(x=sat)) +
+  geom_histogram( aes(y=..density..), colour="black", fill="lightblue")+
+  geom_density(alpha=.2, fill="indianred3") + 
+  labs(title = "sat Distribution Female")
+satfemale.ggplot
+
+#male
+satmale.ggplot <- ggplot( df.male, aes(x=sat)) +
+  geom_histogram( aes(y=..density..), colour="black", fill="lightblue")+
+  geom_density(alpha=.2, fill="indianred3") + 
+  labs(title = "sat Distribution Male")
+satmale.ggplot
+
+#ggplot grid
+#grid.arrange(satfemale.ggplot, satmale.ggplot, ncol=2)
+
+```
+
+#### Distribució _'sat'_ per _'athlete'_
+
+
+Visualització de la distribució de la variable _'sat'_ en funció de si és o no atleta.
+
+```{r, echo=TRUE}
+##sat-athlete
+df.athletes <- df %>% filter(athlete == TRUE)
+df.noathletes <- df %>% filter(athlete == FALSE)
+
+#athletes
+satAthletes.ggplot <- ggplot( df.athletes, aes(x=sat)) +
+  geom_histogram( aes(y=..density..), colour="black", fill="lightblue")+
+  geom_density(alpha=.2, fill="indianred3") + 
+  labs(title = "sat Distribution Athletes")
+satAthletes.ggplot
+
+#no athletes
+satNoathletes.ggplot <- ggplot( df.noathletes, aes(x=sat)) +
+  geom_histogram( aes(y=..density..), colour="black", fill="lightblue")+
+  geom_density(alpha=.2, fill="indianred3") + 
+  labs(title = "sat Distribution No Athletes")
+satNoathletes.ggplot
+```
+
+#### Distribució _'sat'_ segons raça
+
+
+Visualització de la distribució de la variable _'sat'_ en funció de la raça.
+
+```{r, echo=TRUE}
+##sat-race
+df.white <- df %>% filter(white == TRUE)
+df.black <- df %>% filter(black == FALSE)
+df.noRace <- df %>% filter(black ==FALSE & white == FALSE)
+count(df.noRace)
+
+#white
+satWhite.ggplot <- ggplot( df.white, aes(x=sat)) +
+  geom_histogram( aes(y=..density..), colour="black", fill="lightblue")+
+  geom_density(alpha=.2, fill="indianred3") + 
+  labs(title = "sat Distribution White")
+satWhite.ggplot
+
+#black
+satBlack.ggplot <- ggplot( df.black, aes(x=sat)) +
+  geom_histogram( aes(y=..density..), colour="black", fill="lightblue")+
+  geom_density(alpha=.2, fill="indianred3") + 
+  labs(title = "sat Distribution Black")
+satBlack.ggplot
+
+#no race
+satNorace.ggplot <- ggplot( df.noRace, aes(x=sat)) +
+  geom_histogram( aes(y=..density..), colour="black", fill="lightblue")+
+  geom_density(alpha=.2, fill="indianred3") + 
+  labs(title = "sat Distribution No Race")
+satNorace.ggplot
+```
+
+### Distribucions sobre _'colgpa'_
+
+#### Distribució _'colgpa'_ per _'female'_
+
+
+Visualització de la distribució de la variable _'colgpa'_ en funció del gènere, variable _'female'_.
+
+```{r, echo=TRUE}
+##colgpa-female
+#female
+colgpafemale.ggplot <- ggplot( df.female, aes(x=colgpa)) +
+  geom_histogram( aes(y=..density..), colour="black", fill="lightblue")+
+  geom_density(alpha=.2, fill="indianred3") + 
+  labs(title = "colgpa Distribution Female")
+colgpafemale.ggplot
+
+#male
+colgpamale.ggplot <- ggplot( df.male, aes(x=colgpa)) +
+  geom_histogram( aes(y=..density..), colour="black", fill="lightblue")+
+  geom_density(alpha=.2, fill="indianred3") + 
+  labs(title = "colgpa Distribution Male")
+colgpamale.ggplot
+
+#ggplot grid
+#grid.arrange(colgpafemale.ggplot, colgpamale.ggplot, ncol=2)
+
+```
+
+#### Distribució _'colgpa'_ per _'athlete'_
+
+
+Visualització de la distribució de la variable _'colgpa'_ en funció de si és o no atleta.
+
+```{r, echo=TRUE}
+##colgpa-athlete
+#athletes
+colgpaAthletes.ggplot <- ggplot( df.athletes, aes(x=colgpa)) +
+  geom_histogram( aes(y=..density..), colour="black", fill="lightblue")+
+  geom_density(alpha=.2, fill="indianred3") + 
+  labs(title = "colgpa Distribution Athletes")
+colgpaAthletes.ggplot
+
+#no athletes
+colgpaNoathletes.ggplot <- ggplot( df.noathletes, aes(x=colgpa)) +
+  geom_histogram( aes(y=..density..), colour="black", fill="lightblue")+
+  geom_density(alpha=.2, fill="indianred3") + 
+  labs(title = "colgpa Distribution No Athletes")
+colgpaNoathletes.ggplot
+```
+
+#### Distribució _'colgpa'_ segons raça
+
+
+Visualització de la distribució de la variable _'colgpa'_ en funció de la raça.
+
+```{r, echo=TRUE}
+##colgpa-race
+#white
+colgpaWhite.ggplot <- ggplot( df.white, aes(x=colgpa)) +
+  geom_histogram( aes(y=..density..), colour="black", fill="lightblue")+
+  geom_density(alpha=.2, fill="indianred3") + 
+  labs(title = "colgpa Distribution White")
+colgpaWhite.ggplot
+
+#black
+colgpaBlack.ggplot <- ggplot( df.black, aes(x=colgpa)) +
+  geom_histogram( aes(y=..density..), colour="black", fill="lightblue")+
+  geom_density(alpha=.2, fill="indianred3") + 
+  labs(title = "colgpa Distribution Black")
+colgpaBlack.ggplot
+
+#no race
+colgpaNorace.ggplot <- ggplot( df.noRace, aes(x=colgpa)) +
+  geom_histogram( aes(y=..density..), colour="black", fill="lightblue")+
+  geom_density(alpha=.2, fill="indianred3") + 
+  labs(title = "colgpa Distribution No Race")
+colgpaNorace.ggplot
+```
+
+
+### Interpretació dels gràfics
+
+Amb la visualització dels gràfics corresponents a les distribucions de les variables _'sat'_ i _'colgpa'_, podem observar que ambdues mostres un comportament que té una tendència simètrica, tot i que, en el cas de la variable _'sat'_ es veu molt millor reflectit que en cas de la variable _'colgpa'_.
+
+Centrant-nos exclusivament en els gràfics corresponents a la variable _'sat'_, podem afirmar que la distribució seguida d'aquesta variable en funció del gènere és pràcticament igual en els dos casos, amb un punt central al voltant dels 1000 punts. En el cas d'anàlisi en si són o no atletes, observem un canvi de paradigma. En el cas dels alumnes que són atletes, la distribució dels valors és molt més dispersa. Trobem més registres amb valors baixos de forma més freqüent i amb un punt central també més baix del vist en el gràfic dels alumnes que no són atletes. Finalment, si ens centrem en els valors segons la raça, podem veure una distribució pràcticament calcada tant si aquests són blancs com si són negres. Pel que fa als valors corresponents a les persones que no pertanyen a cap dels grups esmentats anteriorment, la distribució és molt dispersa, donat per la poca quantitat de registres que trobem en aquest cas concret.

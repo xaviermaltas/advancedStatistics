@@ -276,3 +276,122 @@ Si ens fixem en la nota mitjana del primer semestre, variable _'colpga'_, en fun
 ******
 # Interval de confiança de la mitjana poblacional de la variable _'sat'_ i _'colpga'_
 ******
+
+## Supòsits
+
+### _'sat'_
+
+```{r, echo=TRUE}
+#summary
+summary(df$sat)
+
+#metrics table
+idx <- c("sat","colgpa")
+mean <- as.vector(sapply(df[,idx], mean, na.rm=TRUE))
+sd <- as.vector(sapply(df[,idx], sd, na.rm=TRUE))
+median <- as.vector(sapply(df[,idx], median, na.rm=TRUE))
+IQR <- as.vector(sapply(df[,idx],IQR, na.rm=TRUE))
+
+#table creation
+table.satcolgpa <- kable(data.frame(Variables=names(df[idx]),
+                                Mean = mean,
+                                StandardDeviation = sd,
+                                Median = median,
+                                IQR = IQR),digits=2, caption="Table")
+table.satcolgpa
+
+
+#sat Box plot
+boxplot(df$sat, main="Sat Boxplot Distribution")
+
+```
+
+Observant les mètriques i gràfics podem suposar que el valor mitjà poblacional de la variable _'sat'_ es trobarà entre els valors 1000 i 1050.
+
+### _'colgpa'_
+
+```{r, echo=TRUE}
+#summary
+summary(df$colgpa)
+
+#metrics table
+idx <- c("sat","colgpa")
+mean <- as.vector(sapply(df[,idx], mean, na.rm=TRUE))
+sd <- as.vector(sapply(df[,idx], sd, na.rm=TRUE))
+median <- as.vector(sapply(df[,idx], median, na.rm=TRUE))
+IQR <- as.vector(sapply(df[,idx],IQR, na.rm=TRUE))
+
+#table creation
+table.satcolgpa <- kable(data.frame(Variables=names(df[idx]),
+                                Mean = mean,
+                                StandardDeviation = sd,
+                                Median = median,
+                                IQR = IQR),digits=2, caption="Table")
+table.satcolgpa
+
+#colgpa Box plot
+boxplot(df$colgpa, main="Colgp Boxplot Distribution")
+```
+
+Observant les mètriques i gràfics podem suposar que el valor mitjà poblacional de la variable _'colgpa'_ es trobarà entre els valors 2.45 i 2.75.
+
+## Funció de càlcul de l’interval de confiança
+
+A continuació realitzem una funció anomenada IC que donat un vector de dades (x) i un nivell de confiança (NC), retorni els intervals de confiança de la mostra.
+
+```{r, echo=TRUE}
+
+IC <- function(x, NC) {
+  n <- length(x)
+  mean <- mean(x)
+  sd <- sd(x)
+  z <- abs(qnorm(((1-NC)/2)))
+  errorst <- sd/sqrt(n)
+  lim_inf <- mean - (z*errorst)
+  lim_sup <- mean + (z*errorst)
+  output <- data.frame(NC, n, mean, sd, z, errorst, lim_inf, lim_sup)
+  return(output)
+}
+
+```
+
+## Interval de confiança de la variable _'sat'_
+
+Calculem els intervals de confiança de la variable _'sat'_ mitjançant la funció creada a l’apartat anterior. A la vegada, realitzem la comprovació del correcte funcionament de la nostra funció mitjançant la qual disposa R anomenada t.test.
+
+```{r, echo=TRUE}
+#Intervals de confinaça
+ic95.sat <- IC(df$sat, 0.95)
+ic95.sat
+ic90.sat <- IC(df$sat, 0.90)
+ic90.sat
+
+#t.test
+t.test(df$sat, conf.level = 0.95)
+t.test(df$sat, conf.level = 0.90)
+```
+
+Observem que els resultats obtinguts d'ambdues funcions ens donen els mateixos intervals de confiança final en els dos casos. 
+
+## Interval de confiança de la variable _'colgpa'_
+
+Realitzarem el mateix procés per la variable _'colgpa'_. Còmput dels intervals de confiança i comprovació mitjançant t.test.
+
+```{r, echo=TRUE}
+#Intervals de confinaça
+ic95.colgpa <- IC(df$colgpa, 0.95)
+ic95.colgpa
+ic90.colgpa <- IC(df$colgpa, 0.90)
+ic90.colgpa
+
+#t.test
+t.test(df$colgpa, conf.level = 0.95)
+t.test(df$colgpa, conf.level = 0.90)
+```
+
+Observem que els resultats obtinguts d'ambdues funcions ens donen els mateixos intervals de confiança final en els dos casos. 
+
+## Interpretació
+
+A l'hora d'interpretar els intervals de confiança obtinguts, podem concloure que si realitzem un mostreig amb quantitat elevada de mostres de la població, el percentatge (NC) dels intervals de confiança que hàgim obtingut d'aquestes mostres, contindran el valor de la mitjana poblacional.
+Per tant, en el cas de la variable _'sat'_, el 95% dels valors aconseguits de la mostra, es trobaran continguts dins l'interval de confiança [1026.083, 1034.579].

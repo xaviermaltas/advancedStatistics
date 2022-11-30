@@ -397,6 +397,18 @@ visualització</a>
 <li><a href="#anàlisi-descriptiva" id="toc-anàlisi-descriptiva"><span class="toc-section-number">2.1</span> Anàlisi descriptiva</a></li>
 <li><a href="#visualització" id="toc-visualització"><span class="toc-section-number">2.2</span> Visualització</a></li>
 </ul></li>
+<li><a href="#interval-de-confiança-de-la-mitjana-poblacional-de-la-variable-sat-i-colpga" id="toc-interval-de-confiança-de-la-mitjana-poblacional-de-la-variable-sat-i-colpga"><span class="toc-section-number">3</span> Interval de confiança de la mitjana
+poblacional de la variable <em>‘sat’</em> i <em>‘colpga’</em></a>
+<ul>
+<li><a href="#supòsits" id="toc-supòsits"><span class="toc-section-number">3.1</span> Supòsits</a></li>
+<li><a href="#funció-de-càlcul-de-linterval-de-confiança" id="toc-funció-de-càlcul-de-linterval-de-confiança"><span class="toc-section-number">3.2</span> Funció de càlcul de l’interval de
+confiança</a></li>
+<li><a href="#interval-de-confiança-de-la-variable-sat" id="toc-interval-de-confiança-de-la-variable-sat"><span class="toc-section-number">3.3</span> Interval de confiança de la
+variable <em>‘sat’</em></a></li>
+<li><a href="#interval-de-confiança-de-la-variable-colgpa" id="toc-interval-de-confiança-de-la-variable-colgpa"><span class="toc-section-number">3.4</span> Interval de confiança de la
+variable <em>‘colgpa’</em></a></li>
+<li><a href="#interpretació" id="toc-interpretació"><span class="toc-section-number">3.5</span> Interpretació</a></li>
+</ul></li>
 </ul>
 </div>
 
@@ -722,7 +734,242 @@ com si són negres. Pel que fa als valors corresponents a les persones
 que no pertanyen a cap dels grups esmentats anteriorment, la distribució
 és molt dispersa com a conseqüència per la poca quantitat de registres
 que trobem en aquest cas concret.</p>
+<hr />
 </div>
+</div>
+</div>
+<div id="interval-de-confiança-de-la-mitjana-poblacional-de-la-variable-sat-i-colpga" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Interval de confiança
+de la mitjana poblacional de la variable <em>‘sat’</em> i
+<em>‘colpga’</em></h1>
+<hr />
+<div id="supòsits" class="section level2" number="3.1">
+<h2><span class="header-section-number">3.1</span> Supòsits</h2>
+<div id="sat" class="section level3" number="3.1.1">
+<h3><span class="header-section-number">3.1.1</span> <em>‘sat’</em></h3>
+<pre class="r"><code>#summary
+summary(df$sat)</code></pre>
+<pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##     470     940    1030    1030    1120    1540</code></pre>
+<pre class="r"><code>#metrics table
+idx &lt;- c(&quot;sat&quot;,&quot;colgpa&quot;)
+mean &lt;- as.vector(sapply(df[,idx], mean, na.rm=TRUE))
+sd &lt;- as.vector(sapply(df[,idx], sd, na.rm=TRUE))
+median &lt;- as.vector(sapply(df[,idx], median, na.rm=TRUE))
+IQR &lt;- as.vector(sapply(df[,idx],IQR, na.rm=TRUE))
+
+#table creation
+table.satcolgpa &lt;- kable(data.frame(Variables=names(df[idx]),
+                                Mean = mean,
+                                StandardDeviation = sd,
+                                Median = median,
+                                IQR = IQR),digits=2, caption=&quot;Table&quot;)
+table.satcolgpa</code></pre>
+<table>
+<caption>Table</caption>
+<thead>
+<tr class="header">
+<th align="left">Variables</th>
+<th align="right">Mean</th>
+<th align="right">StandardDeviation</th>
+<th align="right">Median</th>
+<th align="right">IQR</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">sat</td>
+<td align="right">1030.33</td>
+<td align="right">139.40</td>
+<td align="right">1030.00</td>
+<td align="right">180.00</td>
+</tr>
+<tr class="even">
+<td align="left">colgpa</td>
+<td align="right">2.65</td>
+<td align="right">0.66</td>
+<td align="right">2.66</td>
+<td align="right">0.91</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>#sat Box plot
+boxplot(df$sat, main=&quot;Sat Boxplot Distribution&quot;)</code></pre>
+<p><img src="data:image/png;base64,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kHIKTwEBhZSLSBQQUEi5jYkCAgopN9JTQEAhJaAUEFBIeQmUAgIKDQJKPgGFBgEln4BCyik8BQQUUi4iUUBAISWgFBBQSAkoBQQUUgJKAQGFlIBSQEAhJaAUEFBI+VhjCggoNKTrgR52Txg/AYUm99GTTUChRT/JJaAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEF3LqAA/em9UX1vsE+H/mUDt0vvjep7gwB3hYACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQNB/AXvtZeREp2G4AAAAAElFTkSuQmCC" width="672" /></p>
+<p>Observant les mètriques i gràfics podem suposar que el valor mitjà
+poblacional de la variable <em>‘sat’</em> es trobarà entre els valors
+1000 i 1050.</p>
+</div>
+<div id="colgpa" class="section level3" number="3.1.2">
+<h3><span class="header-section-number">3.1.2</span>
+<em>‘colgpa’</em></h3>
+<pre class="r"><code>#summary
+summary(df$colgpa)</code></pre>
+<pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   0.000   2.210   2.660   2.654   3.120   4.000</code></pre>
+<pre class="r"><code>#metrics table
+idx &lt;- c(&quot;sat&quot;,&quot;colgpa&quot;)
+mean &lt;- as.vector(sapply(df[,idx], mean, na.rm=TRUE))
+sd &lt;- as.vector(sapply(df[,idx], sd, na.rm=TRUE))
+median &lt;- as.vector(sapply(df[,idx], median, na.rm=TRUE))
+IQR &lt;- as.vector(sapply(df[,idx],IQR, na.rm=TRUE))
+
+#table creation
+table.satcolgpa &lt;- kable(data.frame(Variables=names(df[idx]),
+                                Mean = mean,
+                                StandardDeviation = sd,
+                                Median = median,
+                                IQR = IQR),digits=2, caption=&quot;Table&quot;)
+table.satcolgpa</code></pre>
+<table>
+<caption>Table</caption>
+<thead>
+<tr class="header">
+<th align="left">Variables</th>
+<th align="right">Mean</th>
+<th align="right">StandardDeviation</th>
+<th align="right">Median</th>
+<th align="right">IQR</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">sat</td>
+<td align="right">1030.33</td>
+<td align="right">139.40</td>
+<td align="right">1030.00</td>
+<td align="right">180.00</td>
+</tr>
+<tr class="even">
+<td align="left">colgpa</td>
+<td align="right">2.65</td>
+<td align="right">0.66</td>
+<td align="right">2.66</td>
+<td align="right">0.91</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>#colgpa Box plot
+boxplot(df$colgpa, main=&quot;Colgp Boxplot Distribution&quot;)</code></pre>
+<p><img src="data:image/png;base64,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lBvCHAgo7EiPwp92SxifgMIux+ApJqAwoZ+UElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCBJQgCABBQgSUIAgAQUIElCAIAEFCJphQC9/+ffvvvvub7+8ClxXQIF25hbQl18lnzn74fe1VxdQjvN+oJSaV0DffrL7qd2Lh8/qFuBOwVHekZ5iswro68frqX7ydOO99TcXX1QtwX2CY3wmEuXmFNDfPl4F8+vkBz+vgvrgx5pFuEtwhE/lpMKcAvoiy+U6qR/VLMJdgiN8LjwVZhTQyy8Xi+kD9teLxbs1R+PdIzhCQKkwo4Cudjezx+v7fpZsyh69to4zIaBUEFBICSgVZhTQ1UP4i2eTn3kIT2MCSoUZBXT5TVbL9dOij2oW4R7BEQJKhTkF9M3jVUF/SH7wdtXPbKf0Tu4RHOE0JirMKaDr85hWxXz61+/W/tfmTPqqs5jcJTjKifSUm1VAlz89nhwSuvhT3QLcJTjKEUeKzSugy8vnaUIvPq99Ryb3CY7TT0rNLKArly+/e/706dPPv/s+8H527hRAO/ML6L0IKNCOgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIE/dMFFKCd5o1qvcCWTn1jA+eleaNaLxDgn4WAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKEDQ/wdTiBPhWz7btwAAAABJRU5ErkJggg==" width="672" /></p>
+<p>Observant les mètriques i gràfics podem suposar que el valor mitjà
+poblacional de la variable <em>‘colgpa’</em> es trobarà entre els valors
+2.45 i 2.75.</p>
+</div>
+</div>
+<div id="funció-de-càlcul-de-linterval-de-confiança" class="section level2" number="3.2">
+<h2><span class="header-section-number">3.2</span> Funció de càlcul de
+l’interval de confiança</h2>
+<p>A continuació realitzem una funció anomenada IC que donat un vector
+de dades (x) i un nivell de confiança (NC), retorni els intervals de
+confiança de la mostra.</p>
+<pre class="r"><code>IC &lt;- function(x, NC) {
+  n &lt;- length(x)
+  mean &lt;- mean(x)
+  sd &lt;- sd(x)
+  z &lt;- abs(qnorm(((1-NC)/2)))
+  errorst &lt;- sd/sqrt(n)
+  lim_inf &lt;- mean - (z*errorst)
+  lim_sup &lt;- mean + (z*errorst)
+  output &lt;- data.frame(NC, n, mean, sd, z, errorst, lim_inf, lim_sup)
+  return(output)
+}</code></pre>
+</div>
+<div id="interval-de-confiança-de-la-variable-sat" class="section level2" number="3.3">
+<h2><span class="header-section-number">3.3</span> Interval de confiança
+de la variable <em>‘sat’</em></h2>
+<p>Calculem els intervals de confiança de la variable <em>‘sat’</em>
+mitjançant la funció creada a l’apartat anterior. A la vegada, realitzem
+la comprovació del correcte funcionament de la nostra funció mitjançant
+la qual disposa R anomenada t.test.</p>
+<pre class="r"><code>#Intervals de confinaça
+ic95.sat &lt;- IC(df$sat, 0.95)
+ic95.sat</code></pre>
+<pre><code>##     NC    n     mean       sd        z  errorst  lim_inf  lim_sup
+## 1 0.95 4137 1030.331 139.4014 1.959964 2.167327 1026.083 1034.579</code></pre>
+<pre class="r"><code>ic90.sat &lt;- IC(df$sat, 0.90)
+ic90.sat</code></pre>
+<pre><code>##    NC    n     mean       sd        z  errorst  lim_inf  lim_sup
+## 1 0.9 4137 1030.331 139.4014 1.644854 2.167327 1026.766 1033.896</code></pre>
+<pre class="r"><code>#t.test
+t.test(df$sat, conf.level = 0.95)</code></pre>
+<pre><code>## 
+##  One Sample t-test
+## 
+## data:  df$sat
+## t = 475.39, df = 4136, p-value &lt; 2.2e-16
+## alternative hypothesis: true mean is not equal to 0
+## 95 percent confidence interval:
+##  1026.082 1034.580
+## sample estimates:
+## mean of x 
+##  1030.331</code></pre>
+<pre class="r"><code>t.test(df$sat, conf.level = 0.90)</code></pre>
+<pre><code>## 
+##  One Sample t-test
+## 
+## data:  df$sat
+## t = 475.39, df = 4136, p-value &lt; 2.2e-16
+## alternative hypothesis: true mean is not equal to 0
+## 90 percent confidence interval:
+##  1026.765 1033.897
+## sample estimates:
+## mean of x 
+##  1030.331</code></pre>
+<p>Observem que els resultats obtinguts d’ambdues funcions ens donen els
+mateixos intervals de confiança final en els dos casos.</p>
+</div>
+<div id="interval-de-confiança-de-la-variable-colgpa" class="section level2" number="3.4">
+<h2><span class="header-section-number">3.4</span> Interval de confiança
+de la variable <em>‘colgpa’</em></h2>
+<p>Realitzarem el mateix procés per la variable <em>‘colgpa’</em>.
+Còmput dels intervals de confiança i comprovació mitjançant t.test.</p>
+<pre class="r"><code>#Intervals de confinaça
+ic95.colgpa &lt;- IC(df$colgpa, 0.95)
+ic95.colgpa</code></pre>
+<pre><code>##     NC    n     mean        sd        z    errorst  lim_inf  lim_sup
+## 1 0.95 4137 2.654131 0.6578132 1.959964 0.01022727 2.634086 2.674176</code></pre>
+<pre class="r"><code>ic90.colgpa &lt;- IC(df$colgpa, 0.90)
+ic90.colgpa</code></pre>
+<pre><code>##    NC    n     mean        sd        z    errorst  lim_inf  lim_sup
+## 1 0.9 4137 2.654131 0.6578132 1.644854 0.01022727 2.637309 2.670953</code></pre>
+<pre class="r"><code>#t.test
+t.test(df$colgpa, conf.level = 0.95)</code></pre>
+<pre><code>## 
+##  One Sample t-test
+## 
+## data:  df$colgpa
+## t = 259.52, df = 4136, p-value &lt; 2.2e-16
+## alternative hypothesis: true mean is not equal to 0
+## 95 percent confidence interval:
+##  2.634080 2.674182
+## sample estimates:
+## mean of x 
+##  2.654131</code></pre>
+<pre class="r"><code>t.test(df$colgpa, conf.level = 0.90)</code></pre>
+<pre><code>## 
+##  One Sample t-test
+## 
+## data:  df$colgpa
+## t = 259.52, df = 4136, p-value &lt; 2.2e-16
+## alternative hypothesis: true mean is not equal to 0
+## 90 percent confidence interval:
+##  2.637305 2.670957
+## sample estimates:
+## mean of x 
+##  2.654131</code></pre>
+<p>Observem que els resultats obtinguts d’ambdues funcions ens donen els
+mateixos intervals de confiança final en els dos casos.</p>
+</div>
+<div id="interpretació" class="section level2" number="3.5">
+<h2><span class="header-section-number">3.5</span> Interpretació</h2>
+<p>A l’hora d’interpretar els intervals de confiança obtinguts, podem
+concloure que si realitzem un mostreig amb quantitat elevada de mostres
+de la població, el percentatge (NC) dels intervals de confiança que
+hàgim obtingut d’aquestes mostres, contindran el valor de la mitjana
+poblacional. Per tant, en el cas de la variable <em>‘sat’</em>, el 95%
+dels valors aconseguits de la mostra, es trobaran continguts dins
+l’interval de confiança [1026.083, 1034.579].</p>
 </div>
 </div>
 

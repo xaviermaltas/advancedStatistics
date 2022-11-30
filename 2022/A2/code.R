@@ -184,4 +184,67 @@ colgpaNorace.ggplot
 # Interval de confiança de la mitjana poblacional de la variable _'sat'_ i _'colpga'_
 #******
 
-## Suposits
+## Supòsits
+
+#summary
+summary(df$sat)
+summary(df$colgpa)
+
+#metrics table
+idx <- c("sat","colgpa")
+mean <- as.vector(sapply(df[,idx], mean, na.rm=TRUE))
+sd <- as.vector(sapply(df[,idx], sd, na.rm=TRUE))
+median <- as.vector(sapply(df[,idx], median, na.rm=TRUE))
+IQR <- as.vector(sapply(df[,idx],IQR, na.rm=TRUE))
+
+#table creation
+table.satcolgpa <- kable(data.frame(Variables=names(df[idx]),
+                                Mean = mean,
+                                StandardDeviation = sd,
+                                Median = median,
+                                IQR = IQR),digits=2, caption="Table")
+table.satcolgpa
+
+#metrics
+sd(df$sat)
+
+#sat Box plot
+boxplot(df$sat, main="Sat Boxplot Distribution")
+#colgpa Box plot
+boxplot(df$colgpa, main="Colgp Boxplot Distribution")
+
+## Funció de càlcul de l’interval de confiança
+
+IC <- function(x, NC) {
+  n <- length(x)
+  mean <- mean(x)
+  sd <- sd(x)
+  z <- abs(qnorm(((1-NC)/2)))
+  errorst <- sd/sqrt(n)
+  lim_inf <- mean - (z*errorst)
+  lim_sup <- mean + (z*errorst)
+  output <- data.frame(NC, n, mean, sd, z, errorst, lim_inf, lim_sup)
+  return(output)
+}
+
+
+## Interval de confiança de la variable _'sat'_
+
+#Intervals de confinaça
+ic95.sat <- IC(df$sat, 0.95)
+ic90.sat <- IC(df$sat, 0.90)
+
+#t.test
+t.test(df$sat, conf.level = 0.95)
+t.test(df$sat, conf.level = 0.90)
+
+
+## Interval de confiança de la variable _'colgpa'_
+
+#Intervals de confinaça
+ic95.colgpa <- IC(df$colgpa, 0.95)
+ic90.colgpa <- IC(df$colgpa, 0.90)
+
+#t.test
+t.test(df$colgpa, conf.level = 0.95)
+t.test(df$colgpa, conf.level = 0.90)

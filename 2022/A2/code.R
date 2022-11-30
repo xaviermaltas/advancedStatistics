@@ -179,3 +179,9 @@ colgpaNorace.ggplot <- ggplot( df.noRace, aes(x=colgpa)) +
   geom_density(alpha=.2, fill="indianred3") + 
   labs(title = "colgpa Distribution No Race")
 colgpaNorace.ggplot
+
+#******
+# Interval de confiança de la mitjana poblacional de la variable _'sat'_ i _'colpga'_
+#******
+
+## Suposits

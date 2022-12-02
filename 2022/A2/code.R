@@ -4,6 +4,7 @@ if (!require('plyr')) install.packages('plyr'); library('plyr')
 if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
 if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
 if (!require('VIM')) install.packages('VIM'); library('VIM')
+if (!require('fitdistrplus')) install.packages('fitdistrplus'); library('fitdistrplus')
 require(gridExtra)
 
 
@@ -248,3 +249,85 @@ ic90.colgpa <- IC(df$colgpa, 0.90)
 #t.test
 t.test(df$colgpa, conf.level = 0.95)
 t.test(df$colgpa, conf.level = 0.90)
+
+#******
+#  Ser atleta influeix a la nota?
+#******
+
+## Anàlisi visual
+
+##src: https://stackoverflow.com/questions/46821524/create-a-manual-legend-for-density-plots-in-r-ggplot2
+#colgpa ath-noAth density ggplot
+colgpaAthNotath <- ggplot() +
+  geom_density(aes(x = df.athletes$colgpa, color = 'Athletes'), alpha=.5, fill="indianred3") +
+  geom_density(aes(x = df.noathletes$colgpa, color = 'No Athletes'), alpha=.5, fill="lightblue") +
+  xlab("colgpa") + ylab("Density") + ggtitle('colgpa Distribution Athletes-No athletes') +
+  theme(legend.position = 'right') +
+  scale_color_manual(values = c('Athletes' = 'red', 'No Athletes' = 'blue'))
+colgpaAthNotath
+
+
+## Funció per al contrast de mitjanes
+
+tTest <- function( x1, x2, halternativa="twosided", C=95 ){
+  
+  mean1 <- mean(x1)
+  mean2 <- mean(x2)
+  n1 <- length(x1)
+  n2 <- length(x2)
+  sd1 <- sd(x1)
+  sd2 <- sd(x2)
+  alfa <- (1-C/100)
+  
+  #src: https://www.investopedia.com/terms/t/t-test.asp#:~:text=two%20sample%20sets.-,T%2DScore,validity%20of%20the%20null%20hypothesis.
+  degreefreedom <- ( (sd1**2/n1 + sd2**2/n2)**2 ) / ( (sd1**2/n1)**2/(n1-1) + (sd2**2/n2)**2/(n2-1))
+  t <- (mean1-mean2) / (sqrt( sd1**2/n1 + sd2**2/n2 ))
+  
+  if (halternativa=="twosided"){
+    tcritical <- qt( alfa/2, degreefreedom, lower.tail=FALSE ) 
+    pvalue<-pt( abs(t), degreefreedom, lower.tail=FALSE )*2 
+  }
+  else if (halternativa=="<"){
+    tcritical <- qt( alfa, degreefreedom, lower.tail=TRUE )
+    pvalue<-pt( t, degreefreedom, lower.tail=TRUE )
+  }
+  else{ #">"
+    tcritical <- qt( alfa, degreefreedom, lower.tail=FALSE )
+    pvalue<-pt( t, degreefreedom, lower.tail=FALSE )
+  }
+  #Resultat en un named vector
+  output<-c(mean1, mean2, t, tcritical, pvalue)
+  names(output)<-c("mean1", "mean2", "t", "tcritical", "pvalue")
+  return (output)
+}
+
+
+## Justificació del test a aplicar
+df.athletes.colgpa <- df.athletes$colgpa
+df.noathletes.colgpa <-df.noathletes$colgpa
+
+#atheltes
+
+athletes.nrow <- nrow(df.athletes)
+print(paste("Athletes is a ", (athletes.nrow/(nrow(df))) *100, "% of the set"))
+pie(table(df$athlete), main="Athletes-No athletes Pie Plot",labels = c("No Athletes","Athletes"))
+
+athletes.colgpa.fit.norm <- fitdist(df.athletes.colgpa, "norm")
+denscomp(athletes.colgpa.fit.norm)
+
+#No atheltes
+
+noathletes.colgpa.fit.norm <- fitdist(df.noathletes.colgpa, "norm")
+denscomp(noathletes.colgpa.fit.norm)
+
+
+var.test(df.athletes.colgpa, df.noathletes.colgpa)
+
+
+## Càlcul
+
+ttest.colgpa.95<-tTest( df.athletes.colgpa, df.noathletes.colgpa, "<", 95); ttest.colgpa.95
+t.test( df.athletes.colgpa, df.noathletes.colgpa, alternative="less", conf.level=0.95)
+
+
+## Interpretació del test

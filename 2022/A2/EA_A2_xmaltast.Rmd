@@ -25,6 +25,7 @@ if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
 if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
 if (!require('gridExtra')) install.packages('gridExtra'); library('gridExtra')
 if (!require('VIM')) install.packages('VIM'); library('VIM')
+if (!require('fitdistrplus')) install.packages('fitdistrplus'); library('fitdistrplus')
 ```
 
 ******
@@ -395,3 +396,119 @@ Observem que els resultats obtinguts d'ambdues funcions ens donen els mateixos i
 
 A l'hora d'interpretar els intervals de confiança obtinguts, podem concloure que si realitzem un mostreig amb quantitat elevada de mostres de la població, el percentatge (NC) dels intervals de confiança que hàgim obtingut d'aquestes mostres, contindran el valor de la mitjana poblacional.
 Per tant, en el cas de la variable _'sat'_, el 95% dels valors aconseguits de la mostra, es trobaran continguts dins l'interval de confiança [1026.083, 1034.579].
+
+
+
+******
+# Ser atleta influeix a la nota?
+******
+
+## Anàlisi visual
+
+Realitzem un petit anàlisi visual per tal d'orientar la pregunta.
+
+```{r, echo=TRUE}
+#colgpa ath-noAth density ggplot
+colgpaAthNotath <- ggplot() +
+  geom_density(aes(x = df.athletes$colgpa, color = 'Athletes'), alpha=.5, fill="indianred3") +
+  geom_density(aes(x = df.noathletes$colgpa, color = 'No Athletes'), alpha=.5, fill="lightblue") +
+  xlab("colgpa") + ylab("Density") + ggtitle('colgpa Distribution Athletes-No athletes') +
+  theme(legend.position = 'right') +
+  scale_color_manual(values = c('Athletes' = 'red', 'No Athletes' = 'blue'))
+colgpaAthNotath
+```
+
+Observem que hi ha una diferència en la distribució entre els alumnes que són atletes respecte a aquells que no ho són. Els alumnes que són atletes concentren la variable _'colgpa'_ sobre la zona del valor 2, mentre que aquells que no són atletes ho fan sobre la zona del valor 3.
+
+## Funció per al contrast de mitjanes
+
+```{r, echo=TRUE}
+tTest <- function( x1, x2, halternativa="twosided", C=95 ){
+  
+  mean1 <- mean(x1)
+  mean2 <- mean(x2)
+  n1 <- length(x1)
+  n2 <- length(x2)
+  sd1 <- sd(x1)
+  sd2 <- sd(x2)
+  alfa <- (1-C/100)
+  
+  #src: https://www.investopedia.com/terms/t/t-test.asp#:~:text=two%20sample%20sets.-,T%2DScore,validity%20of%20the%20null%20hypothesis.
+  degreefreedom <- ( (sd1**2/n1 + sd2**2/n2)**2 ) / ( (sd1**2/n1)**2/(n1-1) + (sd2**2/n2)**2/(n2-1))
+  t <- (mean1-mean2) / (sqrt( sd1**2/n1 + sd2**2/n2 ))
+  
+  if (halternativa=="twosided"){
+    tcritical <- qt( alfa/2, degreefreedom, lower.tail=FALSE ) 
+    pvalue<-pt( abs(t), degreefreedom, lower.tail=FALSE )*2 
+  }
+  else if (halternativa=="<"){
+    tcritical <- qt( alfa, degreefreedom, lower.tail=TRUE )
+    pvalue<-pt( t, degreefreedom, lower.tail=TRUE )
+  }
+  else{ #">"
+    tcritical <- qt( alfa, degreefreedom, lower.tail=FALSE )
+    pvalue<-pt( t, degreefreedom, lower.tail=FALSE )
+  }
+  #Resultat en un named vector
+  output<-c(mean1, mean2, t, tcritical, pvalue)
+  names(output)<-c("mean1", "mean2", "t", "tcritical", "pvalue")
+  return (output)
+}
+
+```
+
+## Pregunta de recerca
+
+La nota mitjana poblacional _'colgpa'_ dels alumnes que són atletes és inferior a la nota mitjana poblacional _'colgpa'_ de la resta d'alumnes?
+
+## Hipòtesi nul·la i l'alternativa
+
+Un cop formulada la pregunta que desitgem respondre, cal determinar la hipòtesi nul·la i la hipòtesi alternativa.
+
+$$
+H_0: \mu_{Athletes} = \mu_{Other}
+$$
+$$
+H_1:  \mu_{Athletes} < \mu_{Other}
+$$
+La hipòtesi nul·la representa allò que desitgem provar, mentre que la hipòtesi alternativa, representa l'alternativa que oferim respecte a la hipòtesi nul·la. 
+
+## Justificació del test a aplicar
+
+Per saber quin tipus de test podem aplicar per resoldre la hipòtesi plantejada i les característiques de la mostra, hem de realitzar un petit estudi sobre el conjunt de dades.
+
+```{r, echo=TRUE}
+#New colgpa ath-no ath df
+df.athletes.colgpa <- df.athletes$colgpa
+df.noathletes.colgpa <- df.noathletes$colgpa
+
+## Atheltes
+athletes.nrow <- nrow(df.athletes)
+print(paste("Athletes is a ", (athletes.nrow/(nrow(df))) *100, "% of the set"))
+pie(table(df$athlete), main="Athletes-No athletes Pie Plot",labels = c("No Athletes","Athletes"))
+
+#athletes norm
+athletes.colgpa.fit.norm <- fitdist(df.athletes.colgpa, "norm")
+denscomp(athletes.colgpa.fit.norm)
+
+#No atheltes
+#No athletes norm
+noathletes.colgpa.fit.norm <- fitdist(df.noathletes.colgpa, "norm")
+denscomp(noathletes.colgpa.fit.norm)
+```
+
+Estem realitzant un test de dues mostres sobre la mitjana de variàncies desconegudes, és per aquest motiu que aplicant el teorema del límit central (TLC) podem assumir normalitat, ja que tal com ens indica el TLC, la mitjana d'una mostra de mida gran (mostra superior a 30 registres) es comporta com una distribució normal. Hi ha un matís a tenir en compte i és que desconeixem la variància de la població i per tant haurem de fer servir la variància mostral com a aproximació. En aquest cas, haurem d'aplicar la distribucio t de Student amb n-1 graus de llibertat. En funcions pràctiques, com que les mostres són grans, la distribució t de Student es comporta de forma similar a la distribució normal.
+
+## Càlcul
+
+Aplicarem la funció _tTest_ creada anteriorment i realitzarem una comprovació amb els la funció de R _t.test_.
+
+```{r, echo=TRUE}
+ttest.colgpa.95<-tTest( df.athletes.colgpa, df.noathletes.colgpa, "<", 95); ttest.colgpa.95
+t.test( df.athletes.colgpa, df.noathletes.colgpa, alternative="less", conf.level=0.95)
+```
+
+## Interpretació del test
+
+El _p valor_ és una xifra que oscil·la entre 0 i 1, i que correspon a la probabilitat estadística que un valor sigui possible donat que la hipòtesi nul·la sigui certa. Aquest indicador, en cas de ser petit, indicarà que el valor de l'estadístic de contrast que hem observat tenia una probabilitat petita de sortir sota la hipòtesi nul·la i, per tant, rebutgem la hipòtesi nul·la. Per altra banda, en cas de ser gran, indicarà que era un valor bastant probable sota la hipòtesi nul·la i, en conseqüència, té sentit acceptar la hipòtesi nul·la.
+En el cas que ens ocupa, el valor p del test és molt petit. És per aquest motiu que, hem de refusar la hipòtesi nul·la, com a tal podem afirmar que la nota mitjana poblacional _'colgpa'_ dels atletes, és inferior a la resta dels altres alumnes.

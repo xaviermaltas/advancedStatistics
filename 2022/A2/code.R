@@ -258,13 +258,13 @@ t.test(df$colgpa, conf.level = 0.90)
 
 ##src: https://stackoverflow.com/questions/46821524/create-a-manual-legend-for-density-plots-in-r-ggplot2
 #colgpa ath-noAth density ggplot
-colgpaAthNotath <- ggplot() +
+colgpaAthNotath.ggplot <- ggplot() +
   geom_density(aes(x = df.athletes$colgpa, color = 'Athletes'), alpha=.5, fill="indianred3") +
   geom_density(aes(x = df.noathletes$colgpa, color = 'No Athletes'), alpha=.5, fill="lightblue") +
   xlab("colgpa") + ylab("Density") + ggtitle('colgpa Distribution Athletes-No athletes') +
   theme(legend.position = 'right') +
   scale_color_manual(values = c('Athletes' = 'red', 'No Athletes' = 'blue'))
-colgpaAthNotath
+colgpaAthNotath.ggplot
 
 
 ## Funció per al contrast de mitjanes
@@ -285,21 +285,22 @@ tTest <- function( x1, x2, halternativa="twosided", C=95 ){
   
   if (halternativa=="twosided"){
     tcritical <- qt( alfa/2, degreefreedom, lower.tail=FALSE ) 
-    pvalue<-pt( abs(t), degreefreedom, lower.tail=FALSE )*2 
+    pvalue <- pt( abs(t), degreefreedom, lower.tail=FALSE )*2 
   }
   else if (halternativa=="<"){
     tcritical <- qt( alfa, degreefreedom, lower.tail=TRUE )
-    pvalue<-pt( t, degreefreedom, lower.tail=TRUE )
+    pvalue <- pt( t, degreefreedom, lower.tail=TRUE )
   }
   else{ #">"
     tcritical <- qt( alfa, degreefreedom, lower.tail=FALSE )
-    pvalue<-pt( t, degreefreedom, lower.tail=FALSE )
+    pvalue <- pt( t, degreefreedom, lower.tail=FALSE )
   }
   #Resultat en un named vector
-  output<-c(mean1, mean2, t, tcritical, pvalue)
-  names(output)<-c("mean1", "mean2", "t", "tcritical", "pvalue")
+  output <- c(alfa, mean1, mean2, t, tcritical, pvalue)
+  names(output) <- c("alfa", "mean1", "mean2", "t", "tcritical", "pvalue")
   return (output)
 }
+
 
 
 ## Justificació del test a aplicar
@@ -308,17 +309,18 @@ df.noathletes.colgpa <-df.noathletes$colgpa
 
 #atheltes
 
-athletes.nrow <- nrow(df.athletes)
-print(paste("Athletes is a ", (athletes.nrow/(nrow(df))) *100, "% of the set"))
+df.athletes.nrow <- nrow(df.athletes)
+print(paste("Athletes is a ", (df.athletes.nrow/(nrow(df))) *100, "% of the set"))
 pie(table(df$athlete), main="Athletes-No athletes Pie Plot",labels = c("No Athletes","Athletes"))
 
-athletes.colgpa.fit.norm <- fitdist(df.athletes.colgpa, "norm")
-denscomp(athletes.colgpa.fit.norm)
+#athletes norm
+fit.norm.athletes.colgpa <- fitdist(df.athletes.colgpa, "norm")
+denscomp(fit.norm.athletes.colgpa, main= "Histogram and theoretical densities - Athletes")
 
 #No atheltes
-
-noathletes.colgpa.fit.norm <- fitdist(df.noathletes.colgpa, "norm")
-denscomp(noathletes.colgpa.fit.norm)
+#No athletes norm
+fit.norm.noathletes.colgpa <- fitdist(df.noathletes.colgpa, "norm")
+denscomp(fit.norm.noathletes.colgpa, main= "Histogram and theoretical densities - No athletes")
 
 
 var.test(df.athletes.colgpa, df.noathletes.colgpa)
@@ -326,8 +328,46 @@ var.test(df.athletes.colgpa, df.noathletes.colgpa)
 
 ## Càlcul
 
-ttest.colgpa.95<-tTest( df.athletes.colgpa, df.noathletes.colgpa, "<", 95); ttest.colgpa.95
+ttest.athNoAth.colgpa.95<-tTest( df.athletes.colgpa, df.noathletes.colgpa, "<", 95); ttest.athNoAth.colgpa.95
 t.test( df.athletes.colgpa, df.noathletes.colgpa, alternative="less", conf.level=0.95)
 
+
+#******
+#  Les dones tenen millor nota que els homes?
+#******
+## Anàlisi visual
+
+#colgpa female-male density ggplot
+colgpaFemaleMale.ggplot <- ggplot() +
+  geom_density(aes(x = df.female$colgpa, color = 'Female'), alpha=.5, fill="indianred3") +
+  geom_density(aes(x = df.male$colgpa, color = 'Male'), alpha=.5, fill="lightblue") +
+  xlab("colgpa") + ylab("Density") + ggtitle('colgpa Distribution Female-Male') +
+  theme(legend.position = 'right') +
+  scale_color_manual(values = c('Female' = 'red', 'Male' = 'blue'))
+colgpaFemaleMale.ggplot
+
+#Densities comparation - real and theoretical
+df.female.colgpa <- df.female$colgpa
+df.female.nrow <- nrow(df.female); df.female.nrow
+
+df.male.colgpa <-df.male$colgpa
+df.male.nrow <- nrow(df.male); df.male.nrow
+
+#Female
+fit.norm.female.colgpa <- fitdist(df.female.colgpa, "norm")
+denscomp(fit.norm.female.colgpa, main= "Histogram and theoretical densities - Female")
+
+#Male
+fit.norm.male.colgpa <- fitdist(df.male.colgpa, "norm")
+denscomp(fit.norm.male.colgpa, main= "Histogram and theoretical densities - Male")
+
+## Funció
+## Pregunta de recerca
+## Hipòtesi nul·la i l'alternativa
+## Justificació del test a aplicar
+## Càlcul
+
+ttest.femaleMale.colgpa.95<-tTest( df.female.colgpa, df.male.colgpa, ">", 95); ttest.femaleMale.colgpa.95
+t.test( df.female.colgpa, df.male.colgpa, alternative="greater", conf.level=0.95)
 
 ## Interpretació del test

@@ -409,13 +409,13 @@ Realitzem un petit anàlisi visual per tal d'orientar la pregunta.
 
 ```{r, echo=TRUE}
 #colgpa ath-noAth density ggplot
-colgpaAthNotath <- ggplot() +
+colgpaAthNotath.ggplot <- ggplot() +
   geom_density(aes(x = df.athletes$colgpa, color = 'Athletes'), alpha=.5, fill="indianred3") +
   geom_density(aes(x = df.noathletes$colgpa, color = 'No Athletes'), alpha=.5, fill="lightblue") +
   xlab("colgpa") + ylab("Density") + ggtitle('colgpa Distribution Athletes-No athletes') +
   theme(legend.position = 'right') +
   scale_color_manual(values = c('Athletes' = 'red', 'No Athletes' = 'blue'))
-colgpaAthNotath
+colgpaAthNotath.ggplot
 ```
 
 Observem que hi ha una diferència en la distribució entre els alumnes que són atletes respecte a aquells que no ho són. Els alumnes que són atletes concentren la variable _'colgpa'_ sobre la zona del valor 2, mentre que aquells que no són atletes ho fan sobre la zona del valor 3.
@@ -423,6 +423,7 @@ Observem que hi ha una diferència en la distribució entre els alumnes que són
 ## Funció per al contrast de mitjanes
 
 ```{r, echo=TRUE}
+
 tTest <- function( x1, x2, halternativa="twosided", C=95 ){
   
   mean1 <- mean(x1)
@@ -439,21 +440,22 @@ tTest <- function( x1, x2, halternativa="twosided", C=95 ){
   
   if (halternativa=="twosided"){
     tcritical <- qt( alfa/2, degreefreedom, lower.tail=FALSE ) 
-    pvalue<-pt( abs(t), degreefreedom, lower.tail=FALSE )*2 
+    pvalue <- pt( abs(t), degreefreedom, lower.tail=FALSE )*2 
   }
   else if (halternativa=="<"){
     tcritical <- qt( alfa, degreefreedom, lower.tail=TRUE )
-    pvalue<-pt( t, degreefreedom, lower.tail=TRUE )
+    pvalue <- pt( t, degreefreedom, lower.tail=TRUE )
   }
   else{ #">"
     tcritical <- qt( alfa, degreefreedom, lower.tail=FALSE )
-    pvalue<-pt( t, degreefreedom, lower.tail=FALSE )
+    pvalue <- pt( t, degreefreedom, lower.tail=FALSE )
   }
   #Resultat en un named vector
-  output<-c(mean1, mean2, t, tcritical, pvalue)
-  names(output)<-c("mean1", "mean2", "t", "tcritical", "pvalue")
+  output <- c(alfa, mean1, mean2, t, tcritical, pvalue)
+  names(output) <- c("alfa", "mean1", "mean2", "t", "tcritical", "pvalue")
   return (output)
 }
+
 
 ```
 
@@ -483,18 +485,20 @@ df.athletes.colgpa <- df.athletes$colgpa
 df.noathletes.colgpa <- df.noathletes$colgpa
 
 ## Atheltes
-athletes.nrow <- nrow(df.athletes)
-print(paste("Athletes is a ", (athletes.nrow/(nrow(df))) *100, "% of the set"))
+df.athletes.nrow <- nrow(df.athletes)
+print(paste("Athletes is a ", (df.athletes.nrow/(nrow(df))) *100, "% of the set"))
 pie(table(df$athlete), main="Athletes-No athletes Pie Plot",labels = c("No Athletes","Athletes"))
 
 #athletes norm
-athletes.colgpa.fit.norm <- fitdist(df.athletes.colgpa, "norm")
-denscomp(athletes.colgpa.fit.norm)
+fit.norm.athletes.colgpa <- fitdist(df.athletes.colgpa, "norm")
+denscomp(fit.norm.athletes.colgpa, main= "Histogram and theoretical densities - Athletes")
 
 #No atheltes
 #No athletes norm
-noathletes.colgpa.fit.norm <- fitdist(df.noathletes.colgpa, "norm")
-denscomp(noathletes.colgpa.fit.norm)
+fit.norm.noathletes.colgpa <- fitdist(df.noathletes.colgpa, "norm")
+denscomp(fit.norm.noathletes.colgpa, main= "Histogram and theoretical densities - No athletes")
+
+
 ```
 
 Estem realitzant un test de dues mostres sobre la mitjana de variàncies desconegudes, és per aquest motiu que aplicant el teorema del límit central (TLC) podem assumir normalitat, ja que tal com ens indica el TLC, la mitjana d'una mostra de mida gran (mostra superior a 30 registres) es comporta com una distribució normal. Hi ha un matís a tenir en compte i és que desconeixem la variància de la població i per tant haurem de fer servir la variància mostral com a aproximació. En aquest cas, haurem d'aplicar la distribucio t de Student amb n-1 graus de llibertat. En funcions pràctiques, com que les mostres són grans, la distribució t de Student es comporta de forma similar a la distribució normal.
@@ -504,7 +508,7 @@ Estem realitzant un test de dues mostres sobre la mitjana de variàncies descone
 Aplicarem la funció _tTest_ creada anteriorment i realitzarem una comprovació amb els la funció de R _t.test_.
 
 ```{r, echo=TRUE}
-ttest.colgpa.95<-tTest( df.athletes.colgpa, df.noathletes.colgpa, "<", 95); ttest.colgpa.95
+ttest.athNoAth.colgpa.95<-tTest( df.athletes.colgpa, df.noathletes.colgpa, "<", 95); ttest.athNoAth.colgpa.95
 t.test( df.athletes.colgpa, df.noathletes.colgpa, alternative="less", conf.level=0.95)
 ```
 
@@ -512,3 +516,114 @@ t.test( df.athletes.colgpa, df.noathletes.colgpa, alternative="less", conf.level
 
 El _p valor_ és una xifra que oscil·la entre 0 i 1, i que correspon a la probabilitat estadística que un valor sigui possible donat que la hipòtesi nul·la sigui certa. Aquest indicador, en cas de ser petit, indicarà que el valor de l'estadístic de contrast que hem observat tenia una probabilitat petita de sortir sota la hipòtesi nul·la i, per tant, rebutgem la hipòtesi nul·la. Per altra banda, en cas de ser gran, indicarà que era un valor bastant probable sota la hipòtesi nul·la i, en conseqüència, té sentit acceptar la hipòtesi nul·la.
 En el cas que ens ocupa, el valor p del test és molt petit. És per aquest motiu que, hem de refusar la hipòtesi nul·la, com a tal podem afirmar que la nota mitjana poblacional _'colgpa'_ dels atletes, és inferior a la resta dels altres alumnes.
+
+
+
+******
+#  Les dones tenen millor nota que els homes?
+******
+## Anàlisi visual
+
+Realitzem un petit anàlisi visual per tal d’orientar la pregunta.
+
+```{r, echo=TRUE}
+#colgpa female-male density ggplot
+colgpaFemaleMale.ggplot <- ggplot() +
+  geom_density(aes(x = df.female$colgpa, color = 'Female'), alpha=.5, fill="indianred3") +
+  geom_density(aes(x = df.male$colgpa, color = 'Male'), alpha=.5, fill="lightblue") +
+  xlab("colgpa") + ylab("Density") + ggtitle('colgpa Distribution Female-Male') +
+  theme(legend.position = 'right') +
+  scale_color_manual(values = c('Female' = 'red', 'Male' = 'blue'))
+colgpaFemaleMale.ggplot
+
+
+#Densities comparation - real and theoretical
+df.female.colgpa <- df.female$colgpa
+df.female.nrow <- nrow(df.female); df.female.nrow
+
+df.male.colgpa <-df.male$colgpa
+df.male.nrow <- nrow(df.male); df.male.nrow
+
+#Female
+fit.norm.female.colgpa <- fitdist(df.female.colgpa, "norm")
+denscomp(fit.norm.female.colgpa, main= "Histogram and theoretical densities - Female")
+
+#Male
+fit.norm.male.colgpa <- fitdist(df.male.colgpa, "norm")
+denscomp(fit.norm.male.colgpa, main= "Histogram and theoretical densities - Male")
+```
+
+Observem que la distribució de les dues mostres són molt similars amb una tendènia simètrica en els dos casos. En el cas de les dones el valor central de la variable _'colgpa'_ es troba sobre el valor 2.75 mentre que en el cas dels homes sobre el 2.25.
+
+## Funció
+
+Es farà servir la funció realitzada a l'apartat 4.2. Justificació a l'apartat 5.5.
+
+## Pregunta de recerca
+
+La nota mitjana poblacional ‘colgpa’ dels alumnes que són dones és superior a la nota mitjana poblacional ‘colgpa’ dels alumnes homes?
+
+## Hipòtesi nul·la i l'alternativa
+
+
+Un cop formulada la pregunta que desitgem respondre, cal determinar la hipòtesi nul·la i la hipòtesi alternativa.
+
+$$
+H_0: \mu_{Female} = \mu_{Male}
+$$
+$$
+H_1:  \mu_{Female} > \mu_{Male}
+$$
+
+
+## Justificació del test a aplicar
+
+A través de l'anàlisi visual que hem realitzat anteriorment, podem observar que disposem de dues distribucions de tendència simètrica. A la vegada, aquesta mostra pot ser considerada com a una mostra de mida gran donat el nombre de registres que disposem en els dos casos. Mitjançant l'aplicació del teorema del límit central, per una mostra de mida gran, aquesta es comporta com a una distribució normal. Per dur a terme la comprovació total d'aquest fet, hem comparat la distribució de cada una de les dues mostres (female i male) amb la distribució de densitat teòrica d'una distribució de tipus normal, i veiem en els dos casos encaixa de forma bastant precisa. Així doncs, estaríem parlant de dues distribucions de tipus normal.
+El test aplicat a la secció anterior, hem utilitzat la funció _qt_, ja que havíem tingut en compte que treballàvem sobre una distribució t de Student. En el cas actual hauríem de fer servir _qnorm_, que ens entrega el quantil d'una distribució de tipus normal especificant una densitat acumulada concreta. Tot i això, la diferència dels resultats obtinguts amb la funció _qt_ respecte _qnorm_, serien molt similars, és per aquest motiu que s'acceptaria fer servir _qt_ en lloc de _qnorm_, i com a tal, útil la funció anterior pel cas actual.
+
+## Càlcul
+
+Aplicarem la funció _tTest_ creada anteriorment i realitzarem una comprovació amb els la funció de R _t.test_.
+
+```{r, echo=TRUE}
+ttest.femaleMale.colgpa.95<-tTest( df.female.colgpa, df.male.colgpa, ">", 95); ttest.femaleMale.colgpa.95
+t.test( df.female.colgpa, df.male.colgpa, alternative="greater", conf.level=0.95)
+```
+
+## Interpretació del test
+
+Observant els resultats obtinguts en el càlcul del test a l'apartat anterior, podem visualitzar que el valor p és molt petit i inferior al nivell de significació. És per aquest motiu, que hem de refusar la hipòtesi nul·la. Per tant, afirmar que la hipòtesi alternativa és certa. La nota mitjana poblacional _'colgpa'_ de les alumnes dones és superior al dels alumnes homes.
+
+******
+#  Hi ha diferències a la nota segons la raça?
+******
+## Anàlisi visual
+## Funció
+## Pregunta de recerca
+## Hipòtesi nul·la i l'alternativa
+## Justificació del test a aplicar
+## Càlcul
+## Interpretació del test
+
+
+******
+#  Proporció d’atletes
+******
+## Anàlisi visual
+## Funció
+## Pregunta de recerca
+## Hipòtesi nul·la i l'alternativa
+## Justificació del test a aplicar
+## Càlcul
+## Interpretació del test
+
+******
+#  Hi ha més atletes entre els homes que entre les dones?
+******
+## Anàlisi visual
+## Funció
+## Pregunta de recerca
+## Hipòtesi nul·la i l'alternativa
+## Justificació del test a aplicar
+## Càlcul
+## Interpretació del test

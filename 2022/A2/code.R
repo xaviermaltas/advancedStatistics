@@ -371,3 +371,54 @@ ttest.femaleMale.colgpa.95<-tTest( df.female.colgpa, df.male.colgpa, ">", 95); t
 t.test( df.female.colgpa, df.male.colgpa, alternative="greater", conf.level=0.95)
 
 ## Interpretació del test
+
+
+
+#******
+#  Hi ha diferències a la nota segons la raça?
+#******
+## Anàlisi visual
+#colgpa black-white-noRace density ggplot
+colgpaBlackWhiteNorace.ggplot <- ggplot() +
+  geom_density(aes(x = df.black$colgpa, color = 'Black'), alpha=.5, fill="indianred3") +
+  geom_density(aes(x = df.white$colgpa, color = 'White'), alpha=.5, fill="lightblue") +
+  geom_density(aes(x = df.noRace$colgpa, color = 'No race'), alpha=.5, fill="white") +
+  xlab("colgpa") + ylab("Density") + ggtitle('colgpa Distribution Black-White-No race') +
+  theme(legend.position = 'right') +
+  scale_color_manual(values = c('Black' = 'red', 'White' = 'blue', 'No race' = 'green'))
+colgpaBlackWhiteNorace.ggplot
+
+
+#Densities comparation - real and theoretical
+df.black.colgpa <- df.black$colgpa
+df.black.nrow <- nrow(df.black); df.black.nrow
+
+df.white.colgpa <-df.white$colgpa
+df.white.nrow <- nrow(df.white); df.white.nrow
+
+df.noRace.colgpa <-df.noRace$colgpa
+df.noRace.nrow <- nrow(df.noRace); df.noRace.nrow
+
+#Black
+fit.norm.black.colgpa <- fitdist(df.black.colgpa, "norm")
+denscomp(fit.norm.black.colgpa, main= "Histogram and theoretical densities - Black")
+
+#White
+fit.norm.white.colgpa <- fitdist(df.white.colgpa, "norm")
+denscomp(fit.norm.white.colgpa, main= "Histogram and theoretical densities - White")
+
+#No race
+fit.norm.noRace.colgpa <- fitdist(df.noRace.colgpa, "norm")
+denscomp(fit.norm.noRace.colgpa, main= "Histogram and theoretical densities - No Race")
+
+
+## Funció
+## Pregunta de recerca
+## Hipòtesi nul·la i l'alternativa
+## Justificació del test a aplicar
+## Càlcul
+
+ttest.blackWhite.colgpa.95<-tTest( df.black.colgpa, df.white.colgpa, ">", 95); ttest.blackWhite.colgpa.95
+t.test( df.black.colgpa, df.white.colgpa, alternative="greater", conf.level=0.95)
+
+## Interpretació del test

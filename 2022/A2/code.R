@@ -1,5 +1,6 @@
 #0 Imports
 
+library(knitr)
 if (!require('plyr')) install.packages('plyr'); library('plyr')
 if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
 if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
@@ -420,5 +421,62 @@ denscomp(fit.norm.noRace.colgpa, main= "Histogram and theoretical densities - No
 
 ttest.blackWhite.colgpa.95<-tTest( df.black.colgpa, df.white.colgpa, ">", 95); ttest.blackWhite.colgpa.95
 t.test( df.black.colgpa, df.white.colgpa, alternative="greater", conf.level=0.95)
+
+## Interpretació del test
+
+
+
+#******
+#  Proporció d’atletes
+# ******
+
+## Anàlisi visual
+
+#dfAth and dfNoath nrows
+df.athletes.nrow <- nrow(df.athletes); df.athletes.nrow
+df.noathletes.nrow <- nrow(df.noathletes); df.noathletes.nrow
+
+#Ath-NoAth pie plot
+df.athNoAth <- data.frame( alumnes=c("Athletes","No athletes"), n=c(nrow(df.athletes), nrow(df.noathletes)))
+ggplot.pie.athNoAth <-ggplot(df.athNoAth) +
+  aes( x="", y=n, fill= alumnes) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0)+
+  labs(title = "Athletes-No athletes Proportion Pie Plot from sample")
+ggplot.pie.athNoAth
+
+## Funció
+
+#proportion function
+proportionTest <- function( p, p0, n, alternative="twosided", C=95 ){
+  
+  z <- (p-p0)/sqrt( (p0*(1-p0)/n))
+  alfa <- (1-C/100)
+  
+  if (alternative=="twosided"){
+    zcritical <- qnorm( alfa/2, lower.tail=FALSE )
+    pvalue <- pnorm( abs(z), lower.tail=FALSE)*2
+  }
+  else if (alternative==">"){
+    zcritical <- qnorm( alfa, lower.tail=FALSE )
+    pvalue <- pnorm( z, lower.tail=FALSE)
+  }
+  else {
+    zcritical <- qnorm( alfa, lower.tail=TRUE )
+    pvalue <- pnorm(z, lower.tail=TRUE)
+  }
+  output <- c(alfa, p, p0, z, zcritical, pvalue)
+  names(output) <- c("alfa","p","p0","z", "zcritical", "pvalue")
+  return (output)
+}
+
+
+## Pregunta de recerca
+## Hipòtesi nul·la i l'alternativa
+## Justificació del test a aplicar
+## Càlcul
+
+proptest.athNoath.95 <- proportionTest( p=(nrow(df.athletes)/nrow(df)), p0=0.05, n=nrow(df), alternative="<", 95); proptest.athNoath.95
+prop.test(x=nrow(df.athletes), n=nrow(df), p=0.05, alternative="less", correct=FALSE)
 
 ## Interpretació del test

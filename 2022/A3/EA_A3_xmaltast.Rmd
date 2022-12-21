@@ -25,13 +25,81 @@ if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
 if (!require('gridExtra')) install.packages('gridExtra'); library('gridExtra')
 if (!require('VIM')) install.packages('VIM'); library('VIM')
 if (!require('fitdistrplus')) install.packages('fitdistrplus'); library('fitdistrplus')
-```
-******
-# Lectura del fitxer
-******
 
-```{r, echo=TRUE}
 #Load file
 df <- read.csv("datSat_Air.csv", sep=",")
+
+##Anàlisi descriptiva
+##DF descriptive analysis
+#Dimensions
+dim(df)
+#df structure
+str(df)
+#Head data sample
+head(df)
+#Summary
+summary(df)
+#Class per each var
+sapply(df,class)
 ```
+
+******
+# Regressió lineal
+******
+
+## Model de regressió lineal (variables quantitatives)
+
+En aquest apartat intentarem respondre diverses preguntes relacionades amb el retard d'un vol i la distància entre destins mitjançant l'ús de models de regressió lineal. El mètode seleccionat és el __mètode dels mínims quadrats__ on busquem que la suma dels quadrats dels residus sigui mínima. Considerem com a residu, la diferència de distància vertical entre punt del valor observat i recta de regressió.
+
+### Arrival delay - Distance
+
+En primer lloc, se'ns demana observar la relació entre les variables _Arrival_Delay_ i _Distance_. Realitzarem una representació gràfica de com es dispersen els valors tenint en compte aquests dos paràmetres. 
+
+```{r, echo=TRUE}
+#scatter plot
+plot.scatter.distanceArrivaldelay <- plot(Distance~Arrival_Delay, data = df, main="Diagrama de disperció Distance - Arrival delay", xlab="Arrival Delay", ylab="Distance")
+```
+
+A continuació, generem un model de regressió lineal tenint els dos paràmetres.
+
+```{r, echo=TRUE}
+#src: https://www.cyclismo.org/tutorial/R/linearLeastSquares.html
+#Arrival_Delay - Distance Model
+model.linearRegression.arrivaldelayDistance<- lm(Arrival_Delay~Distance, data=df)
+summary(model.linearRegression.arrivaldelayDistance)
+
+#Linear Regression model plot over scatter plot Distance-Arrival delay
+plot.scatter.lm.distanceArrivaldelay <- ggplot(df, aes(x = Distance, y = Arrival_Delay)) + 
+  ggtitle("Model de Regressió Lineal Distance - Arrival delay") + xlab("Distance") + ylab("Arrival Delay") +
+  geom_point() +
+  stat_smooth(method = "lm", col = "red")
+plot.scatter.lm.distanceArrivaldelay
+```
+
+El p-valor és un coeficient que ens indica si les relacions són estadísticament significatives, i si les relacions que observem a la nostra mostra, poden existir en una població major. En el cas que ens ocupa, el p-valor de la variable _Distance_ pren un valor molt petit. Això ens porta a concloure que és una variable significativa en la regressió i un gran indicador a tenir en compte dins el model.
+
+
+### Arrival delay - Distance - Departure delay
+
+En aquest segon apartat afegirem al model anterior la variable _Departure_Delay_.
+
+```{r, echo=TRUE}
+#Arrival_Delay - Distance - Departure_Delay Model
+model.linearRegression.arrivaldelayDistanceDeparturedelay<- lm(Arrival_Delay~Distance+Departure_Delay, data=df)
+summary(model.linearRegression.arrivaldelayDistanceDeparturedelay)
+```
+
+Analitzant els resultats obtinguts del model de regressió lineal utilitzant la nova variable _Departure_Delay_, podem observar que les dues variables tenen un alt nivell de significança donat el valor tan petit que pren el p-valor d'ambdós paràmetres. El que també podem veure respecte als resultats anteriors, és que el p-valor corresponent a la variable _Distance_ pren un valor una mica major respecte el model anterior. Això ens permet concloure que la significança de la variable _Departure_Delay_ és de major rellevància un cop aquesta ha sigut introduïda dins el model.
+
+
+## Model de regressió lineal (variables quantitatives i qualitatives)
+
+
+## Diagnosi del model
+
+## Predicció del model
+
+******
+#  Generació dels conjunts d’entrenament i de test
+******
 

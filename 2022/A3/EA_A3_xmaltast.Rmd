@@ -24,7 +24,14 @@ if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
 if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
 if (!require('gridExtra')) install.packages('gridExtra'); library('gridExtra')
 if (!require('VIM')) install.packages('VIM'); library('VIM')
+if (!require('reprex')) install.packages('reprex'); library('reprex')
 if (!require('fitdistrplus')) install.packages('fitdistrplus'); library('fitdistrplus')
+### https://cran.r-project.org/web/packages/mappings/mappings.pdf
+if(!require('mappings'))
+  install.packages('remotes')
+  library('remotes')
+remotes::install_github("benjaminrich/mappings")
+library(mappings)
 
 #Load file
 df <- read.csv("datSat_Air.csv", sep=",")
@@ -76,8 +83,7 @@ plot.scatter.lm.distanceArrivaldelay <- ggplot(df, aes(x = Distance, y = Arrival
 plot.scatter.lm.distanceArrivaldelay
 ```
 
-El p-valor és un coeficient que ens indica si les relacions són estadísticament significatives, i si les relacions que observem a la nostra mostra, poden existir en una població major. En el cas que ens ocupa, el p-valor de la variable _Distance_ pren un valor molt petit. Això ens porta a concloure que és una variable significativa en la regressió i un gran indicador a tenir en compte dins el model.
-
+El p-valor és un coeficient que ens indica si les relacions són estadísticament significatives, i si les relacions que observem a la nostra mostra poden existir en una població major. En el cas que ens ocupa, el p-valor de la variable _Distance_ pren un valor molt petit. Això ens porta a concloure que és una variable significativa amb una relació líneal negativa entre ambdues variables. A la vegada, el coeficient de determinació ajustat és molt petit (0.012).
 
 ### Arrival delay - Distance - Departure delay
 
@@ -89,17 +95,125 @@ model.linearRegression.arrivaldelayDistanceDeparturedelay<- lm(Arrival_Delay~Dis
 summary(model.linearRegression.arrivaldelayDistanceDeparturedelay)
 ```
 
-Analitzant els resultats obtinguts del model de regressió lineal utilitzant la nova variable _Departure_Delay_, podem observar que les dues variables tenen un alt nivell de significança donat el valor tan petit que pren el p-valor d'ambdós paràmetres. El que també podem veure respecte als resultats anteriors, és que el p-valor corresponent a la variable _Distance_ pren un valor una mica major respecte el model anterior. Això ens permet concloure que la significança de la variable _Departure_Delay_ és de major rellevància un cop aquesta ha sigut introduïda dins el model.
+Analitzant els resultats obtinguts del model de regressió lineal utilitzant la nova variable _Departure_Delay_, podem observar que el p-valor de la variable _Distance_ es troba per sobre ${\alpha}$ fet que deixa de ser significativa. Per altra banda, el p-valor de la variable _Departure_Delay_ és molt baix tenint així un alt nivell de significança. A la vegada, també podem veure respecte als resultats anteriors, és que el coeficient de determinació ajustat augmenta substancialment fins a un valor de 0.9227 respecte al valor tan petit que teníem en el cas anterior (0.012). Aquest fet ens permet veure que el paràmetre _Departure_Delay_ té una major rellevància i utilitat dins el model, ja que ens permetrà determinar millor la variació de la variable dependent _Arrival_Delay_.
 
+```{r, echo=TRUE}
+#Linear Regression model plot over scatter plot Departure delay - Arrival delay
+plot.scatter.lm.departuredelayArrivaldelay <- ggplot(df, aes(x = Departure_Delay, y = Arrival_Delay)) + 
+  ggtitle("Model de Regressió Lineal Departure delay - Arrival delay") + xlab("Departure Delay") + ylab("Arrival Delay") +
+  geom_point() +
+  stat_smooth(method = "lm", col = "red")
+plot.scatter.lm.departuredelayArrivaldelay
+```
 
 ## Model de regressió lineal (variables quantitatives i qualitatives)
+
+En aquest segon punt, treballarem utilitzant variables de tipus quantitatives com l'apartat anterior, però hi afegirem variables qualitatives per tal d'observar si aquestes poden afectar en el grau de satisfacció en general dels clients. Les noves variables afegides són: _Service_, _Food_drink_, _satisfaction_ i _Customer_Type_.
+
+A l'enunciat se'ns plantejen diferents hipòtesis que podem estudiar previament per tal de determinar si certes variables tenen una relació líneal respecte altres. 
+
+En primer lloc, volem observar si el menjar, beguda i servei entregat pot fer variar o no el retard d'un vol.
+Segons el que ens mostra el resultat obtingut, els dos paràmetres tenen un alt nivell de significança, element que té sentit, ja que les companyies dediquen una quantitat de temps extra previ al vol que pot fer que influeixi en el retard d'arribada. Tot i això, quan ens fixem en el coeficient de determinació ajustat, veiem que aquest pren un valor molt petit (0.001965). És per aquest motiu, que ens pot portar pensar que aquestes dues variables no tenen gairebé incidència a la variable _Arrival_Delay_. 
+
+```{r, echo=TRUE}
+#model
+model.a <- lm(Arrival_Delay~Service+Food_drink, data=df)
+summary(model.a)
+```
+
+En segon lloc, desitgem veure si com major és el retard, pot afectar a la satisfacció en general de l'experiència al client. Abans de calcular aquesta relació, hem de fer un pas previa, creant una nova variable numerica anomenada _numericSatisfaction_, on es fa una relació entre els valors de la satisfacció del client _'nuetral or dissatisfied'_ a 0 i _'satisfied'_ a 1. 
+Amb els resultats obtinguts, podem veure que tot i tenir un alt nivell de significança donat el p-valor obtingut, quan ens fixem al coeficient de determinació ajustat (0.006859), podem afirmar que la incidència a la variable dependent és pràcticament nul·la.
+
+```{r, echo=TRUE}
+#value remap and cast to integer
+satisfactionTointeger <- function(input) {
+  input [input == "neutral or dissatisfied"] <- 0
+  input [input == "satisfied"] <- 1
+  input <- as.integer(input)
+}
+df$numericSatisfaction <- satisfactionTointeger(df$satisfaction)
+
+#cast characters to factor
+castToFactor <- function(input){
+  input <- as.factor(input)
+}
+
+df$satisfaction <- castToFactor(df$satisfaction)
+df$Gender <- castToFactor(df$Gender)
+df$Customer_Type <- castToFactor(df$Customer_Type)
+df$Class <- castToFactor(df$Class)
+df$Type_Travel <- castToFactor(df$Type_Travel)
+
+#model
+model.b <- lm(numericSatisfaction~Arrival_Delay, data=df)
+summary(model.b)
+
+#plot
+ggplot(df, aes(x = numericSatisfaction, y = Arrival_Delay)) + 
+  ggtitle("Model de Regressió Lineal Numeric satisfaction - Arrival delay") + xlab("Numeric atisfaction") + ylab("Arrival Delay") +
+  geom_point() +
+  stat_smooth(method = "lm", col = "red")
+```
+
+Finalment, desitgem veure si ser un client lleial, pot o no influir en el retard del vol. En aquest cas estem treballant amb una variable categòrica, _Customer_Type_, on una categoria serveix de referència i les altres es tenen en compte al model. El resultat obtingut per als clients lleials té un pendent negatiu, això ens porta a pensar que clients que són lleials, tenen un menor retard d'arribada. En realitzar l'estimador de l'OR sobre la variable _Customer_Type_, veiem que l'ocurrència de percepció de retard d'arribada d'un vol en un client lleial és 0.5427011 vegades menor en relació amb el dels clients no lleials.
+
+```{r, echo=TRUE}
+#model
+model.c <- lm(Arrival_Delay~Customer_Type,data=df)
+summary(model.c)
+#OR
+exp(coefficients(model.c))
+```
+
+Un cop analitzada la significança de les diferents variables introduïdes en aquest nou exercici, procedim a utilitzar-les en aquest nou model per determinar quines d'aquestes són significatives i tenen incidència respecte a la variable dependent. En aquest cas, la variable dependent que farem servir és _numericSatisfaction_, ja que volem saber quina és la incidència d'aquestes respecte a la satisfacció en general dels clients.
+
+```{r, echo=TRUE}
+#model
+model.linearRegression.F <- lm(formula=numericSatisfaction~Arrival_Delay+Distance+Departure_Delay+Service+Food_drink+Customer_Type, data=df)
+summary(model.linearRegression.F)
+```
+
+Després d'incloure totes les variables en el nostre model, observant els p-valors de cada una de les variables, sembla que les variables independents són rellevants pel nostre model. Per altra banda, si ens fixem en el coeficient de determinació ajustat, valor que ens indica la proporció de variància total de la variable dependent en funció dels predictors del model, ens indica que el nostre model només recull un 20% de la variabilitat total de les dades amb les quals estem treballant. Per tant, podem concloure que el nostre model de regressió s'ajusta poc al conjunt de dades.
 
 
 ## Diagnosi del model
 
 ## Predicció del model
 
+
 ******
-#  Generació dels conjunts d’entrenament i de test
+# Regressió logística
 ******
+
+En aquest apartat desitgem saber quins són els factors que més influeixen en el grau de satisfacció dels passsatgers d'avió. Per a poder resoldre aquest dubte plantejat, utilitzarem un model de regressió logística.
+
+
+
+##  Generació dels conjunts d’entrenament i de test
+
+El primer pas a realitzar per a treballar amb un model de regressió logística és del de crear dos conjunts de dades. El conjunt d'entrenament o training i el conjunt de prova o testing. Amb el primer dels dos ajustarem el model, mentre que el segon ens servirà per avaluar la precisió del model creat. 
+
+
+```{r, echo=TRUE}
+#Creating a seed
+set.seed(101)
+
+#Getting dataset dimension
+df.nrows = dim(df)[1]
+trainRows = df.nrows * 0.8
+
+#Creating training indexes
+train_indexes <- sample(df.nrows, trainRows)
+
+#Create training sample 
+df.train <- df[train_indexes, ]
+#Creating test sample
+df.test  <- df[-train_indexes, ]
+```
+
+
+
+
+
+
 

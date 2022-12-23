@@ -32,6 +32,7 @@ if(!require('mappings'))
   library('remotes')
 remotes::install_github("benjaminrich/mappings")
 library(mappings)
+if (!require('car')) install.packages('car'); library('car')
 
 #Load file
 df <- read.csv("datSat_Air.csv", sep=",")
@@ -110,6 +111,9 @@ plot.scatter.lm.departuredelayArrivaldelay
 
 En aquest segon punt, treballarem utilitzant variables de tipus quantitatives com l'apartat anterior, però hi afegirem variables qualitatives per tal d'observar si aquestes poden afectar en el grau de satisfacció en general dels clients. Les noves variables afegides són: _Service_, _Food_drink_, _satisfaction_ i _Customer_Type_.
 
+
+### ModelF
+
 A l'enunciat se'ns plantejen diferents hipòtesis que podem estudiar previament per tal de determinar si certes variables tenen una relació líneal respecte altres. 
 
 En primer lloc, volem observar si el menjar, beguda i servei entregat pot fer variar o no el retard d'un vol.
@@ -169,17 +173,99 @@ Un cop analitzada la significança de les diferents variables introduïdes en aq
 
 ```{r, echo=TRUE}
 #model
-model.linearRegression.F <- lm(formula=numericSatisfaction~Arrival_Delay+Distance+Departure_Delay+Service+Food_drink+Customer_Type, data=df)
+model.linearRegression.F <- lm(formula=Arrival_Delay~Distance+Departure_Delay+Service+Food_drink+Customer_Type+numericSatisfaction, data=df)
 summary(model.linearRegression.F)
 ```
 
-Després d'incloure totes les variables en el nostre model, observant els p-valors de cada una de les variables, sembla que les variables independents són rellevants pel nostre model. Per altra banda, si ens fixem en el coeficient de determinació ajustat, valor que ens indica la proporció de variància total de la variable dependent en funció dels predictors del model, ens indica que el nostre model només recull un 20% de la variabilitat total de les dades amb les quals estem treballant. Per tant, podem concloure que el nostre model de regressió s'ajusta poc al conjunt de dades.
+Després d'incloure totes les variables en el nostre model, observem que els p-valors de múltiples variables prenen valors bastant alts. Aquest fet fa pensar que les variables independents _Distance_, _Service_, _Food_drink_ i _Customer_Type_ no són gaire rellevants pel nostre models. Per altra banda, si ens fixem en el coeficient de determinació ajustat, valor que ens indica la proporció de variància total de la variable dependent en funció dels predictors del model, ens indica que el nostre model recull un 92% de la variablitat total de les dades amb les quals estem treballant.
+
+### Col·linealitat ModelF
+
+En un problema de regressió lineal múltiple esperem observar una dependència entre la variable dependent i un conjunt de variables explicatives, però en alguns casos ens podem trobar en el fet que alguna de les variables independents sigui una combinació lineal d'una de les altres variables independents. Creant així un problema de multicol·linealitat i afectant el còmput dels coeficients de la regressió.
+
+Per a trobar possibles casos de correlació entre variables, hem anat buscant entre diferents combinacions de variables. En primer lloc, hem trobat una alta correlació entre les variables _Departure_Delay_ i _Arrival_Delay_, amb un coeficient de correlació corresponent a 0.9605, indicant d'aquesta manera una presència de col·linealitat entre aquestes dues variables. 
+
+```{r, echo=TRUE}
+#correlation DepartureDelay-ArrivalDelay
+cor(x = df$Arrival_Delay, y = df$Departure_Delay, method = "pearson", use="pairwise.complete.obs")
+```
+
+En segon lloc, hem observat tambe una correlació alta entre les variables _Service_ i _numericSatisfaction_. En aquest cas, el coeficient de correlació pren un valor bastant inferior (0.3523).
+
+```{r, echo=TRUE}
+#correlation numericSatisfaction-Service
+cor(x = df$numericSatisfaction, y = df$Service, method = "pearson", use="pairwise.complete.obs")
+```
+
+A continuació, procedirem a detectar possibles efectes de multicol·linealitat, on un dels efectes principals és la inflació de la variància i covariància dels estimadors. Utilitzarem el factor d'inflació de la variància FIV.
+
+```{r, echo=TRUE}
+#src: https://fhernanb.github.io/libro_regresion/multicoli.html
+#VIF
+library(car)
+vif(model.linearRegression.F)
+```
+
+El factor d'inflació de la variància calcula per a cada variable l'efecte combinat que tenen les dependències entre els diferents regressors sobre la variància de cada variable. Si ens trobem amb el cas on un o múltiples factors FIV prenen un valor gran, podem afirmar que tenim un cas de multicol·linealitat. Aplicat als nostres resultats, podem veure que els coeficients de totes les variables prenen valors relativament petits. 
 
 
 ## Diagnosi del model
 
+Per realitzar la diagnosi del model construit, es demanen dos gràfics. A continuació, implementarem un gràfic amb els valors ajustats enfront dels residus, per observar si la variància és constant. A la vegada, implementarem un gràfic quantil-quantil per comparar els residus del model amb els valors d'una variable que es distribueix de forma normal. 
+
+```{r, echo=TRUE}
+#valors residus
+residus <- rstandard(model.linearRegression.F)
+#valors ajustats
+fitterValues <- fitted(model.linearRegression.F)
+
+#plot fitterValues and qqnorm
+par(mfrow=c(1,2))
+plot(fitterValues, residus)
+qqnorm(residus)
+```
+
+Al primer gràfic observem un patró de dispersió irregular, és a dir, trobem un patró aleatori dels residus. Aquest fet ens indica que no es compleix el supòsit de variància constant en els errors del model.
+Per altra banda, al gràfic QQ podem veure que les dades segueixen tres tendències diferents. En el rang de -4 fins a -1, segueixen una tendència al voltant d'una lineal recta, fet que fa que s'ajustin a una normal. En el rang de -1 fins a 1, també segueixen una tendència al voltant d'una lineal recta, però amb un pendent diferent de la del rang anterior. Finalment, en el cas del rang corresponent de 0 fins a 4, formen una corba en comptes d'una línia recta, fet que ens porta a pensar que les dades són esbiaixades. Ens trobem en un cas de _Fat Tails_.
+
+
 ## Predicció del model
 
+Segons el model de l'apartat anterior, calcularem el retard en l'arribada d'un vol on el viatger es troba satisfet, havent recorregut 2500 milles i havent tingut un retard en la sortida de 30 minuts. El seu nivell de satisfacció del servei ha sigut de 3.
+
+Realitzant diverses proves, hem pogut veure, que el coeficient de determinació ajustat, no canvia si trèiem els factors _Food_drink_ i _Customer_Type_. Això ens porta a veure què els podem eliminar del model, ja que no tenen influència en el valor predit final.
+
+
+```{r, echo=TRUE}
+#Model totes les variables
+model.linearRegression.withFoodCustomerType <- lm(formula=Arrival_Delay~Distance+Departure_Delay+Service+Food_drink+Customer_Type+numericSatisfaction, data=df)
+summary(model.linearRegression.withFoodCustomerType)
+
+#Model sense Food_drink i Customer_type
+model.linearRegression.F <- lm(formula=Arrival_Delay~Distance+Departure_Delay+Service+numericSatisfaction, data=df)
+summary(model.linearRegression.F)
+```
+
+Per tant, si generem diferents conjunts d'entrada utilitzant diferents valors d'aquestes dues variables de forma intercalada, que el resultat final de la variable dependent, és pràcticament igual.
+
+
+```{r, echo=TRUE}
+#Model totes les variables, Max i min Food_drink. Customer_type loyal i no loyal
+predictData = data.frame(Distance=2500, Departure_Delay=30, Service=3, numericSatisfaction=1, Food_drink=0, Customer_Type="Loyal Customer")
+predict(model.linearRegression.withFoodCustomerType, predictData) #Food_drink = 0, Customer_type=Loyal
+predictData = data.frame(Distance=2500, Departure_Delay=30, Service=3, numericSatisfaction=1, Food_drink=5, Customer_Type="Loyal Customer")
+predict(model.linearRegression.withFoodCustomerType, predictData) #Food_drink = 5, Customer_type=Loyal
+predictData = data.frame(Distance=2500, Departure_Delay=30, Service=3, numericSatisfaction=1, Food_drink=0, Customer_Type="disloyal Customer")
+predict(model.linearRegression.withFoodCustomerType, predictData ) #Food_drink = 0, Customer_type=Unloyal
+predictData = data.frame(Distance=2500, Departure_Delay=30, Service=3, numericSatisfaction=1, Food_drink=5, Customer_Type="disloyal Customer")
+predict(model.linearRegression.withFoodCustomerType, predictData) #Food_drink = 5, Customer_type=Unloyal
+
+#Model sense Food_drink i Customer_type
+predictData = data.frame(Distance=2500, Departure_Delay=30, Service=3, numericSatisfaction=1)
+predict(model.linearRegression.F, predictData)
+```
+
+Com podem observar, la hipòtesi plantejada és certa, i tots els resultats són pràcticament igual. El retard serà aproximadament d'uns 29 minuts.
 
 ******
 # Regressió logística

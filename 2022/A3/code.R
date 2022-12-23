@@ -5,11 +5,21 @@
 #Imports
 
 library(knitr)
+if (!require('knitr')) install.packages('knitr'); library('knitr')
 if (!require('plyr')) install.packages('plyr'); library('plyr')
 if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
 if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
+if (!require('gridExtra')) install.packages('gridExtra'); library('gridExtra')
 if (!require('VIM')) install.packages('VIM'); library('VIM')
+if (!require('reprex')) install.packages('reprex'); library('reprex')
 if (!require('fitdistrplus')) install.packages('fitdistrplus'); library('fitdistrplus')
+### https://cran.r-project.org/web/packages/mappings/mappings.pdf
+if(!require('mappings'))
+  install.packages('remotes')
+library('remotes')
+remotes::install_github("benjaminrich/mappings")
+library(mappings)
+if (!require('car')) install.packages('car'); library('car')
 require(gridExtra)
 
 
@@ -70,6 +80,8 @@ plot.scatter.lm.departuredelayArrivaldelay
 
 ## MODELS DE REGRESSIO LINEAL - VARIABLES QUANTITATIVES I QUALITATIVES
 
+
+#1 
 #model
 model.a <- lm(Arrival_Delay~Service+Food_drink, data=df)
 summary(model.a)
@@ -113,17 +125,91 @@ exp(coefficients(model.c))
 
 
 
-model.linearRegression.F <- lm(formula=numericSatisfaction~Arrival_Delay+Distance+Departure_Delay+Service+Food_drink+Customer_Type, data=df)
-summary(model.linearRegression.F)
-exp(coefficients(model.linearRegression.F))
+# model.linearRegression.F <- lm(formula=numericSatisfaction~Arrival_Delay+Distance+Departure_Delay+Service+Food_drink+Customer_Type, data=df)
 
-
-model.linearRegression.F <- lm(formula=numericSatisfaction~Service+Food_drink+Customer_Type, data=df)
+model.linearRegression.F <- lm(formula=Arrival_Delay~Distance+Departure_Delay+Service+Food_drink+Customer_Type+numericSatisfaction, data=df)
 summary(model.linearRegression.F)
 
+model.linearRegression.F <- lm(formula=Arrival_Delay~Distance+Departure_Delay+Service+numericSatisfaction, data=df)
+summary(model.linearRegression.F)
 
 
 
+# exp(coefficients(model.linearRegression.F))
+
+#2
+
+# model.arrival <- lm(numericSatisfaction~Arrival_Delay,data=df)
+# summary(model.arrival)
+# model.distance <- lm(numericSatisfaction~Distance,data=df)
+# model.departure <- lm(numericSatisfaction~Departure_Delay,data=df)
+# summary(model.departure)
+# model.service <- lm(numericSatisfaction~Service,data=df)
+# model.food <- lm(numericSatisfaction~Food_drink,data=df)
+# model.customerType <- lm(numericSatisfaction~Customer_Type,data=df)
+# model.3 <- lm(numericSatisfaction~Arrival_Delay+Departure_Delay, data=df)
+# summary(model.3)
+
+#correlation DepartureDelay-ArrivalDelay
+cor(x = df$Arrival_Delay, y = df$Departure_Delay, method = "pearson", use="pairwise.complete.obs")
+
+
+#correlation numericSatisfaction-Service
+cor(x = df$numericSatisfaction, y = df$Service, method = "pearson", use="pairwise.complete.obs")
+
+#src: https://fhernanb.github.io/libro_regresion/multicoli.html
+#VIF
+library(car)
+vif(model.linearRegression.F)
+1/(1-summary(model.linearRegression.F)$r.squared)
+
+
+
+
+## DIAGNOSI DEL MODEL
+
+# model.linearRegression.F <- lm(formula=numericSatisfaction~Distance+Departure_Delay+Service+Food_drink+Customer_Type, data=df)
+# summary(model.linearRegression.F)
+# vif(model.linearRegression.F)
+
+
+#valors residus
+residus <- rstandard(model.linearRegression.F)
+#valors ajustats
+fitterValues <- fitted(model.linearRegression.F)
+
+#plot fitterValues and qqnorm
+par(mfrow=c(1,2))
+plot(fitterValues, residus)
+qqnorm(residus)
+
+#https://towardsdatascience.com/q-q-plots-explained-5aa8495426c0
+
+
+
+## PREDICCIO DEL MODEL
+
+#Model totes les variables
+model.linearRegression.withFoodCustomerType <- lm(formula=Arrival_Delay~Distance+Departure_Delay+Service+Food_drink+Customer_Type+numericSatisfaction, data=df)
+summary(model.linearRegression.withFoodCustomerType)
+
+#Model sense Food_drink i Customer_type
+model.linearRegression.F <- lm(formula=Arrival_Delay~Distance+Departure_Delay+Service+numericSatisfaction, data=df)
+summary(model.linearRegression.F)
+
+#Model totes les variables, Max i min Food_drink. Customer_type loyal i no loyal
+predictData = data.frame(Distance=2500, Departure_Delay=30, Service=3, numericSatisfaction=1, Food_drink=0, Customer_Type="Loyal Customer")
+predict(model.linearRegression.withFoodCustomerType, predictData)
+predictData = data.frame(Distance=2500, Departure_Delay=30, Service=3, numericSatisfaction=1, Food_drink=5, Customer_Type="Loyal Customer")
+predict(model.linearRegression.withFoodCustomerType, predictData)
+predictData = data.frame(Distance=2500, Departure_Delay=30, Service=3, numericSatisfaction=1, Food_drink=0, Customer_Type="disloyal Customer")
+predict(model.linearRegression.withFoodCustomerType, predictData)
+predictData = data.frame(Distance=2500, Departure_Delay=30, Service=3, numericSatisfaction=1, Food_drink=5, Customer_Type="disloyal Customer")
+predict(model.linearRegression.withFoodCustomerType, predictData)
+
+#Model sense Food_drink i Customer_type
+predictData = data.frame(Distance=2500, Departure_Delay=30, Service=3, numericSatisfaction=1)
+predict(model.linearRegression.F, predictData)
 
 #******
 # 2 - Regressió logística

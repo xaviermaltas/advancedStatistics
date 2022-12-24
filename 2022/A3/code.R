@@ -20,6 +20,8 @@ library('remotes')
 remotes::install_github("benjaminrich/mappings")
 library(mappings)
 if (!require('car')) install.packages('car'); library('car')
+if (!require('pROC')) install.packages('pROC'); library('pROC')
+
 require(gridExtra)
 
 
@@ -228,3 +230,66 @@ train_indexes <- sample(df.nrows, trainRows)
 df.train <- df[train_indexes, ]
 #Creating test sample
 df.test  <- df[-train_indexes, ]
+
+
+## ESTIMACIÓ DEL MODEL AMB EL CONJUNT D'ENTRENAMENT I INTERPRETACIÓ
+
+#ModlgF
+formula = numericSatisfaction~Gender+Customer_Type+Age+Type_Travel + Class + Distance + Seat_comfort + Food_drink + Gate + Wifi + Ent + Ease_booking + Service + Baggage_handling + Checkin_service + Cleanliness + Online_boarding + Departure_Delay + Arrival_Delay
+model.logisticRegression.gF <- glm(formula=formula,family=binomial(link=logit), data=df.train)
+summary(model.logisticRegression.gF)
+
+
+#Col·linealitat ModlgF
+#correlation DepartureDelay-ArrivalDelay
+cor(x = df$Arrival_Delay, y = df$Departure_Delay, method = "pearson", use="pairwise.complete.obs")
+#correlation OnlineBoarding-Wifi
+cor(x = df$Wifi, y = df$Online_boarding, method = "pearson", use="pairwise.complete.obs")
+#correlation BaggageHandling-Cleanliness
+cor(x = df$Baggage_handling, y = df$Cleanliness, method = "pearson", use="pairwise.complete.obs")
+#correlation OnlineBoarding-EaseBooking
+cor(x = df$Online_boarding, y = df$Ease_booking, method = "pearson", use="pairwise.complete.obs")
+#correlation SeatComfort-FoodDrink
+cor(x = df$Seat_comfort, y = df$Food_drink, method = "pearson", use="pairwise.complete.obs")
+
+#VIF
+library(car)
+vif(model.logisticRegression.gF)
+
+#ModlgF
+formula = numericSatisfaction~Gender+Customer_Type+Age+Type_Travel + Class + Distance + Seat_comfort + Food_drink + Gate + Wifi + Ent + Ease_booking + Service + Baggage_handling + Checkin_service + Cleanliness + Online_boarding + Arrival_Delay
+model.logisticRegression.gF <- glm(formula=formula,family=binomial(link=logit), data=df.train)
+summary(model.logisticRegression.gF)
+
+
+model.gF.stepAIC <- stepAIC(model.logisticRegression.gF, trace = FALSE)
+model.gF.stepAIC$anova
+
+
+## CALCUL DE LES ODDS RATIO
+
+## MATRIU DE CONFUSIO
+
+## PREDICCIO
+library(pROC)
+#Obtenim la row numero 3 del dataset de test
+df.test[3,]
+sapply(predictData.glm,class)
+#Obtenim la predicció
+glm.prediction <- predict (model.logisticRegression.gF, data.frame(Gender="Female",  Customer_Type="disloyal Customer", Age=14, Type_Travel="Business travel", Class="Eco", Distance=2750, Seat_comfort=4, Food_drink=4, Gate=5, Wifi=1, Ent=4, Ease_booking=1, Service=5, Baggage_handling=4, Checkin_service=3, Cleanliness=4, Online_boarding=1, Arrival_Delay=0), type="response")
+#predicció
+glm.prediction
+
+
+## BONDAT DE L'AJUST
+
+## CORBA ROC
+
+library(pROC)
+prob=predict(model.logisticRegression.gF, df, type="response")
+r=roc(df$numericSatisfaction,prob, data=df)
+par(mfrow=c(1,2))
+plot(r)
+auc(r)
+
+

@@ -33,6 +33,7 @@ if(!require('mappings'))
 remotes::install_github("benjaminrich/mappings")
 library(mappings)
 if (!require('car')) install.packages('car'); library('car')
+if (!require('pROC')) install.packages('pROC'); library('pROC')
 
 #Load file
 df <- read.csv("datSat_Air.csv", sep=",")
@@ -274,7 +275,6 @@ Com podem observar, la hipòtesi plantejada és certa, i tots els resultats són
 En aquest apartat desitgem saber quins són els factors que més influeixen en el grau de satisfacció dels passsatgers d'avió. Per a poder resoldre aquest dubte plantejat, utilitzarem un model de regressió logística.
 
 
-
 ##  Generació dels conjunts d’entrenament i de test
 
 El primer pas a realitzar per a treballar amb un model de regressió logística és del de crear dos conjunts de dades. El conjunt d'entrenament o training i el conjunt de prova o testing. Amb el primer dels dos ajustarem el model, mentre que el segon ens servirà per avaluar la precisió del model creat. 
@@ -298,8 +298,119 @@ df.test  <- df[-train_indexes, ]
 ```
 
 
+## Estimació del model amb el conjunt d’entrenament i interpretació
+
+### ModlgF
+
+En aquest apartat, se'ns demana que estimem el model de regressió logística sent la variable dependent _numericSatisfaction_, utilitzant totes les variables del conjunt de dades. Recordem que aquelles variables que inicialment eren de tipus _character_ han sigut convertides a tipus _factor_ en apartats anterior. També cal esmentar que treballarem amb el conjunt de dades d'entrenament tal com es comenta a l'enunciat.
 
 
+```{r, echo=TRUE}
+#ModlgF
+formula = numericSatisfaction~Gender+Customer_Type+Age+Type_Travel + Class + Distance + Seat_comfort + Food_drink + Gate + Wifi + Ent + Ease_booking + Service + Baggage_handling + Checkin_service + Cleanliness + Online_boarding + Departure_Delay + Arrival_Delay
+model.logisticRegression.gF <- glm(formula=formula,family=binomial(link=logit), data=df.train)
+summary(model.logisticRegression.gF)
+```
 
 
+### Col·linealitat ModlgF
 
+En primer lloc, per a trobar possibles casos de correlació entre variables, hem anat buscant entre diferents combinacions de regressors. Tal i com hem comentat anteriorment, hem trobat una alta correlació entre les variables _Departure_Delay_ i _Arrival_Delay_, amb un coeficient de correlació corresponent a 0.9605, indicant d'aquesta manera una presència de col·linealitat entre aquestes dues variables. 
+
+```{r, echo=TRUE}
+#correlation DepartureDelay-ArrivalDelay
+cor(x = df$Arrival_Delay, y = df$Departure_Delay, method = "pearson", use="pairwise.complete.obs")
+
+#plot
+plot.scatter.lm.departuredelayArrivaldelay
+```
+
+A part d'aquesta correlació, n'hem trobat diverses més, tot i que amb coeficients de correlació inferiors.
+
+```{r, echo=TRUE}
+#correlation OnlineBoarding-Wifi
+cor(x = df$Wifi, y = df$Online_boarding, method = "pearson", use="pairwise.complete.obs")
+#correlation BaggageHandling-Cleanliness
+cor(x = df$Baggage_handling, y = df$Cleanliness, method = "pearson", use="pairwise.complete.obs")
+#correlation OnlineBoarding-EaseBooking
+cor(x = df$Online_boarding, y = df$Ease_booking, method = "pearson", use="pairwise.complete.obs")
+#correlation SeatComfort-FoodDrink
+cor(x = df$Seat_comfort, y = df$Food_drink, method = "pearson", use="pairwise.complete.obs")
+```
+
+Per tal de comprovar correctament si existeix un cas de col·linealitat, utilitzarem de nou el factor d'inflació de la variància. Aquest factor calcula per a cada variable l’efecte combinat que tenen les dependències entre els diferents regressors sobre la variància de cada variable. Si ens trobem amb el cas on un o múltiples factors FIV prenen un valor gran, podem afirmar que tenim un cas de multicol·linealitat. 
+
+```{r, echo=TRUE}
+#VIF
+library(car)
+vif(model.logisticRegression.gF)
+```
+
+Com podem observar als nostres resultats, tenim dos coeficients que són bastant grans. Aquest correponen al de les variables _Departure_Delay_ i _Arrival_Delay_. És per aquest motiu que decidim eliminar una de les dues dins del nostre model. Així és com queda.
+
+```{r, echo=TRUE}
+#ModlgF
+formula = numericSatisfaction~Gender+Customer_Type+Age+Type_Travel + Class + Distance + Seat_comfort + Food_drink + Gate + Wifi + Ent + Ease_booking + Service + Baggage_handling + Checkin_service + Cleanliness + Online_boarding + Arrival_Delay
+model.logisticRegression.gF <- glm(formula=formula,family=binomial(link=logit), data=df.train)
+summary(model.logisticRegression.gF)
+```
+
+### Interpretació ModlgF
+
+Després d'observar la sortida final del model podem observar que disposem de dos coeficients p-valor més elevats que els de la resta. Estem fent referència el de les variables _Gate_ i _Cleanliness_. Això ens porta a pensar que la significança d'aquestes dues variables independents és baixa. El criteri d'informació d'Akaike (AIC) és un factor que ens permet avaluar com de bé s'adapta el model al conjunt de dades. Un valor AIC inferior indica un model millor ajustat utilitzant menor nombre de paràmetres. En el nostre cas, observem que el AIC pren un valor bastant alt donada a la gran quantitat de factors que tenim en el model. R disposa d'una funció per tal de realitzar una sel·lecció escalonada dels models segons el factor AIC.
+
+```{r, echo=TRUE}
+#stepAIC ModelgF
+model.gF.stepAIC <- stepAIC(model.logisticRegression.gF, trace = FALSE)
+model.gF.stepAIC$anova
+```
+
+
+Com podem observar al resultat obtingut, ens indica que el model inicial entrat pren el valor mínim AIC per la informació que intentem predir.
+
+
+## Càlcul de les OR (Odds-Ràtio)
+
+
+## Matriu de confusió
+
+## Bondat de l’ajust
+
+## Predicció
+
+En aquest apartat desitgem calcular la probabiltat de que el client número 3 del conjunt de dades de test estigui o no satisfet. Al resultat, obtenim que la probabilitat de que aquest client quedi satisfet és d'un 32.27%. 
+
+```{r, echo=TRUE}
+library(pROC)
+#Obtenim la row numero 3 del dataset de test
+df.test[3,]
+#Obtenim la predicció
+glm.prediction <- predict (model.logisticRegression.gF, data.frame(Gender="Female",  Customer_Type="disloyal Customer", Age=14, Type_Travel="Business travel", Class="Eco", Distance=2750, Seat_comfort=4, Food_drink=4, Gate=5, Wifi=1, Ent=4, Ease_booking=1, Service=5, Baggage_handling=4, Checkin_service=3, Cleanliness=4, Online_boarding=1, Arrival_Delay=0), type="response")
+#predicció
+glm.prediction
+```
+
+
+## Corba ROC
+
+La corba ROC _(Receiver Operating Characteristics)_ es tracta d'un gràfic que proporciona una manera de seleccionar possibles models òptims basat en la qualitat de la classsificació a diferents nivells. 
+
+```{r, echo=TRUE}
+library(pROC)
+prob=predict(model.logisticRegression.gF, df, type="response")
+r=roc(df$numericSatisfaction,prob, data=df)
+par(mfrow=c(1,2))
+plot(r)
+auc(r)
+```
+
+En el model, l'àrea per sota de la corba té el valor de 0.9056. Així doncs, l'habilitat de predir del model és bastant alta.
+
+
+******
+# Informe Executiu
+******
+
+## Presentació dels principals resultats de l’estudi en una taula
+
+## Resúmen executiu. Conclusions de l’anàlisi

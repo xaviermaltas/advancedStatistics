@@ -1,0 +1,36 @@
+---
+title: "A4 - Anàlisi estadística avançada"
+author: "Xavier Maltas Tarridas"
+date: "January 2023"
+output: 
+  html_document:
+    highlight: default
+    number_sections: yes
+    theme: cosmo
+    toc: yes
+    toc_depth: 2
+    includes:
+      in_header: RMD-header.html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load_libraries, include=FALSE}
+#Imports
+if (!require('knitr')) install.packages('knitr'); library('knitr')
+if (!require('plyr')) install.packages('plyr'); library('plyr')
+if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
+if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
+```
+
+
+******
+# Preprocessament
+******
+
+```{r, echo=TRUE}
+#Load file
+df <- read.csv("Fumadores.csv", sep=";")
+```

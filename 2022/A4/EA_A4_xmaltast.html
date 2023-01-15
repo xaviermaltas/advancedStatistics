@@ -398,8 +398,103 @@ display: none;
 <div id="preprocessament" class="section level1" number="1">
 <h1><span class="header-section-number">1</span> Preprocessament</h1>
 <hr />
+<p>En primer lloc, realitzem la càrrega del fitxer de dades.
+Seguidament, elaborem una breu anàlisi de la mostra de dades, així com
+una cerca i correcció de les possibles inconsistències en les dades.</p>
 <pre class="r"><code>#Load file
-df &lt;- read.csv(&quot;Fumadores.csv&quot;, sep=&quot;;&quot;)</code></pre>
+df &lt;- read.csv(&quot;Fumadores.csv&quot;, sep=&quot;;&quot;)
+
+###DF descriptive analysis
+#Dimensions
+dim(df)</code></pre>
+<pre><code>## [1] 253   4</code></pre>
+<pre class="r"><code>#df structure
+str(df)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    253 obs. of  4 variables:
+##  $ AE    : chr  &quot;1.871878&quot; &quot;1.91312&quot; &quot;2.58114&quot; &quot;2.17827&quot; ...
+##  $ Tipo  : chr  &quot;NF&quot; &quot;NF&quot; &quot;NF&quot; &quot;NF&quot; ...
+##  $ genero: chr  &quot;M&quot; &quot;F&quot; &quot;M&quot; &quot;F&quot; ...
+##  $ edad  : int  54 60 40 55 59 63 62 62 26 48 ...</code></pre>
+<pre class="r"><code>#Head data sample
+head(df)</code></pre>
+<pre><code>##         AE Tipo genero edad
+## 1 1.871878   NF      M   54
+## 2  1.91312   NF      F   60
+## 3  2.58114   NF      M   40
+## 4  2.17827   NF      F   55
+## 5 1.707732   NF      F   59
+## 6 1.561215   NF      F   63</code></pre>
+<pre class="r"><code>#Summary
+summary(df)</code></pre>
+<pre><code>##       AE                Tipo              genero               edad      
+##  Length:253         Length:253         Length:253         Min.   :17.00  
+##  Class :character   Class :character   Class :character   1st Qu.:43.00  
+##  Mode  :character   Mode  :character   Mode  :character   Median :50.00  
+##                                                           Mean   :49.76  
+##                                                           3rd Qu.:57.00  
+##                                                           Max.   :78.00</code></pre>
+<pre class="r"><code>#Class per each var
+sapply(df,class)</code></pre>
+<pre><code>##          AE        Tipo      genero        edad 
+## &quot;character&quot; &quot;character&quot; &quot;character&quot;   &quot;integer&quot;</code></pre>
+<pre class="r"><code>## NA values
+colSums(is.na(df))</code></pre>
+<pre><code>##     AE   Tipo genero   edad 
+##      0      0      0      0</code></pre>
+<pre class="r"><code>#Transform without units, comma -&gt; dot and numeric datatype
+cleanAndExtractNum &lt;- function(row){
+  num &lt;- gsub(&quot;[a-zA-Z ]&quot;, &quot;&quot;, row) #Elimiem caracters
+  num &lt;- as.numeric(gsub(&quot;,&quot;, &quot;.&quot;,num)) #Comma to dot, to numeric
+}
+
+#AE cleaning
+df$AE &lt;- cleanAndExtractNum(df$AE)
+
+#Tipo unique values and standarization
+unique(df$Tipo)</code></pre>
+<pre><code>##  [1] &quot;NF&quot;     &quot;FP&quot;     &quot;NI&quot;     &quot;FL&quot;     &quot;FM  &quot;   &quot;  FM  &quot; &quot;FM&quot;     &quot;fm&quot;    
+##  [9] &quot;FI&quot;     &quot;fi&quot;</code></pre>
+<pre class="r"><code>df$Tipo[df$Tipo == &quot;  FM  &quot; ] &lt;- &quot;FM&quot;
+df$Tipo[df$Tipo == &quot;FM  &quot;] &lt;- &quot;FM&quot;
+df$Tipo[df$Tipo == &quot;fm&quot; ] &lt;- &quot;FM&quot;
+df$Tipo[df$Tipo == &quot;fi&quot; ] &lt;- &quot;FI&quot;
+
+#Numeric Tipo value
+smokerTypeToInteger &lt;- function(input) {
+  input [input == &quot;NF&quot;] &lt;- 0
+  input [input == &quot;FP&quot;] &lt;- 1
+  input [input == &quot;NI&quot;] &lt;- 2
+  input [input == &quot;FL&quot;] &lt;- 3
+  input [input == &quot;FM&quot;] &lt;- 4
+  input [input == &quot;FI&quot;] &lt;- 5
+  input &lt;- as.integer(input)
+}
+df$TipoNumeric &lt;- smokerTypeToInteger(df$Tipo)
+
+#Gender numeric value
+unique(df$genero)</code></pre>
+<pre><code>## [1] &quot;M&quot; &quot;F&quot;</code></pre>
+<pre class="r"><code>genderTointeger &lt;- function(input) {
+  input [input == &quot;M&quot;] &lt;- 0
+  input [input == &quot;F&quot;] &lt;- 1
+  input &lt;- as.integer(input)
+}
+df$generoNumeric &lt;- genderTointeger(df$genero)
+
+#NA check
+colSums(is.na(df))</code></pre>
+<pre><code>##            AE          Tipo        genero          edad   TipoNumeric 
+##             0             0             0             0             0 
+## generoNumeric 
+##             0</code></pre>
+<pre class="r"><code>head(df)</code></pre>
+<pre><code>##         AE Tipo genero edad TipoNumeric generoNumeric
+## 1 1.871878   NF      M   54           0             0
+## 2 1.913120   NF      F   60           0             1
+## 3 2.581140   NF      M   40           0             0
+## 4 2.178270   NF      F   55           0             1
+## 5 1.707732   NF      F   59           0             1
+## 6 1.561215   NF      F   63           0             1</code></pre>
 </div>
 
 

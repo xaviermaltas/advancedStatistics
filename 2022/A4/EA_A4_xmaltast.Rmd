@@ -93,3 +93,83 @@ colSums(is.na(df))
 head(df)
 ```
 
+******
+# Anàlisi descriptiva de la mostra
+******
+
+## Capacitat pulmonar i gènere
+
+Realitzem un diagrama de caixes i un de densitat per a mostrar la relació entre la capacitat pulmonar en funció al gènere.
+
+```{r, echo=TRUE}
+#Box plot
+ggplot(df, aes(x=AE, y=genero, fill=genero)) + geom_boxplot() + guides() + ggtitle("AE - Gender Box plot")
+
+# Density plots
+ggplot(df, aes(x=AE, fill=genero)) + geom_density(alpha=.3) + ggtitle("AE - Gender Density plot ")
+
+```
+
+Observant els gràfics realitzats anteriorment podem veure que la capacitat pulmonar mitjana del gènere masculí és superior a la del gènere femení. Pel que fa al rang de valors corresponents a la capacitat pulmonar, el gènere masculí pren una major quantitat de valors baixos respecte al gènere femení. A la vegada, el gènere femení és el que disposa d'una major quantitat de registres en valors alts d'aquest paràmetre.
+Com a resum, podem afirmar que el gènere masculí en valors mitjans disposa d'una major capacitat pulmonar, mentre que el gènere femení es mou en un rang de valors superior respecte el gènere masculí.
+
+
+
+## Capacitat pulmonar i edat
+
+Realitzem un gràfic de dispersió per a mostrar la relació entre la capacitat pulmonar i l'edat.
+
+```{r, echo=TRUE}
+#Scatterplot AE-Age
+ggplot(df, aes(edad, AE)) + geom_point() + ggtitle("AE - Age Scatter plot ")
+
+#Linear Regression model plot over scatter plot AE-Age
+ggplot(df, aes(edad, AE))+ geom_point() + ggtitle("Lineal Regression Model AE-Age") + xlab("Age") + ylab("AE") +  stat_smooth(method = "lm", col = "red")
+```
+
+Observant el gràfic de dispersió realitzat, podem veure que hi ha una relació entre la capacitat pulmonar i l'edat de la persona. Els valors corresponents a la capacitat pulmonar segueixen una tendència a la baixa a mesura que el valor de l'edat incrementa. Per a veure de forma més clara, hem aplicat al gràfic de dispersió una regressió lineal, que ens mostra de forma clara la tendència esmentada.
+Finalment, també hem volgut mostrar els mateixos gràfics anteriors, però afegint el factor del gènere.
+
+```{r, echo=TRUE}
+#Scatterplot AE-Age color by gender
+ggplot(df, aes(edad, AE)) + geom_point(aes(color=genero)) + ggtitle("AE - Age Scatter plot by Gender")
+
+#Linear Regression model plot over scatter plot AE-Age color by gender
+ggplot(df, aes(edad, AE))+ geom_point(aes(color=genero)) + ggtitle("Lineal Regression Model AE-Age") + xlab("Age") + ylab("AE") +  stat_smooth(method = "lm", col = "red")
+```
+
+## Tipus de fumadors i capacitat pulmonar
+
+Realitzem un data frame amb el nombre de persones en cada tipus de fumador i la mitjana de AE de cada tipus de fumador. A continuació, realitzem un gràfic de barres on mostrem de forma decreixen el valor mitja AE de cada tipus de fumador. 
+
+```{r, echo=TRUE}
+library(dplyr)
+
+#DF smoker type, n elements and AE mean
+df.byTipoMeanAE <- df %>% group_by(Tipo) %>% summarise(total_count=n(), mean_AE=mean(AE), .groups = 'drop') %>% arrange(desc(mean_AE)) %>% as.data.frame()
+df.byTipoMeanAE
+```
+
+```{r, echo=TRUE}
+#Barplot decreasing meanAE value
+df.byTipoMeanAE[order(df.byTipoMeanAE$mean_AE,decreasing = TRUE),]
+barplot(df.byTipoMeanAE$mean_AE,names.arg = df.byTipoMeanAE$Tipo, main="Barplot mean AE by smoke type",ylim = c(0, 2.5))#, horiz=T , las=1)
+```
+
+
+Finalment, realitzem un diagrama de caixes on es mostri la distribució del paràmetre AE per a cada tipus de fumador. Mitjançant aquest gràfic podem observar clarament que els no fumadors _(NF)_ tenen una major capacitat pulmonar en valor mitjà així com en el rang de les mostres. A continuació, podem trobar els fumadors passius _(FP)_ i fumadors que no inhalen fum _(NI)_ disposen d'un valor mitjà d'AE similar. Pel que fa al rang de mostres, veiem que el que pertany als fumadors passius _(FP)_, en els valors alts, és similar al dels no fumadors _(NF)_. Per altra banda, els valors baixos són inferiors als dels fumadors que no inhalen fum _(NI)_, que es troben agrupats en un bloc molt compacte.
+Pel que fa a la capacitat pulmonar dels tres tipus de fumadors restants, veiem que els fumadors lleugers _(FL)_ disposen d'una capacitat pulmonar mitjana similar a la dels fumadors passius (FP). En termes de rang de les mostres, la major part d'aquestes es troba al voltant dels valors baixos del rang, tot i això, aquests valors són similars als dels no fumadors. Per acabar, veiem que la capacitat pulmonar mitjana dels fumadors moderats _(FM)_ i els fumadors intensius _(FI)_ és pràcticament igual. En qüestions de rang de les mostres, per sorpresa, tenim als fumadors moderats _(FM)_ amb els pitjors registres de tots els tipus de fumadors, fins i tot per sota dels fumadors intensius _(FI)_.
+
+
+
+```{r, echo=TRUE}
+#Box plot AE by Tipo
+ggplot(df, aes(x=AE, y=Tipo, fill=Tipo)) + geom_boxplot() + guides() + ggtitle("AE - Smoker type Box plot")
+```
+
+
+# Interval de confiança de la capacitat pulmonar
+
+```{r, echo=TRUE}
+
+```

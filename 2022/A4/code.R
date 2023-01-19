@@ -68,3 +68,70 @@ df$generoNumeric <- genderTointeger(df$genero)
 
 #NA check
 colSums(is.na(df))
+
+#******
+# Anàlisi descriptiva de la mostra
+#******
+
+## Capacitat pulmonar i gènere
+
+#Box plot
+ggplot(df, aes(x=AE, y=genero, fill=genero)) + geom_boxplot() + guides() + ggtitle("AE - Gender Box plot")
+
+# Density plots
+ggplot(df, aes(x=AE, fill=genero)) + geom_density(alpha=.3) + ggtitle("AE - Gender Density plot ")
+
+
+df.men <- df %>% filter(genero == "M")
+df.female <- df %>% filter(genero == "F")
+summary(df.men)
+summary(df.female)
+
+
+
+## Capacitat pulmonar i edat
+
+#Scatterplot AE-Age
+ggplot(df, aes(edad, AE)) + geom_point() + ggtitle("AE - Age Scatter plot ")
+
+#Linear Regression model plot over scatter plot AE-Age
+ggplot(df, aes(edad, AE))+ geom_point() + ggtitle("Lineal Regression Model AE-Age") + xlab("Age") + ylab("AE") +  stat_smooth(method = "lm", col = "red")
+
+#Scatterplot AE-Age color by gender
+ggplot(df, aes(edad, AE)) + geom_point(aes(color=genero)) + ggtitle("AE - Age Scatter plot by Gender")
+
+#Linear Regression model plot over scatter plot AE-Age color by gender
+ggplot(df, aes(edad, AE))+ geom_point(aes(color=genero)) + ggtitle("Lineal Regression Model AE-Age") + xlab("Age") + ylab("AE") +  stat_smooth(method = "lm", col = "red")
+
+## Tipus de fumadors i capacitat pulmonar
+
+df %>% count(Tipo,mean(AE~Tipo), sort=TRUE)
+df 
+
+df.NF <- df %>% filter(Tipo == "NF")
+df.FP <- df %>% filter(Tipo == "FP")
+df.NI <- df %>% filter(Tipo == "NI")
+df.FL <- df %>% filter(Tipo == "FL")
+df.FM <- df %>% filter(Tipo == "FM")
+df.FI <- df %>% filter(Tipo == "FI")
+
+
+#src :
+#https://www.statology.org/r-mean-by-group/
+#https://sparkbyexamples.com/r-programming/sort-data-frame-in-r/
+
+#DF smoker type, n elements and AE mean
+library(dplyr)
+df.byTipoMeanAE <- df %>% group_by(Tipo) %>% summarise(total_count=n(), mean_AE=mean(AE), .groups = 'drop') %>% arrange(desc(mean_AE)) %>% as.data.frame() 
+
+#Barplot decreasing meanAE value
+df.byTipoMeanAE[order(df.byTipoMeanAE$mean_AE,decreasing = TRUE),]
+barplot(df.byTipoMeanAE$mean_AE,names.arg = df.byTipoMeanAE$Tipo, main="Barplot mean AE by smoke type",ylim = c(0, 2.5))#, horiz=T , las=1)
+
+
+#Box plot AE by Tipo
+ggplot(df, aes(x=AE, y=Tipo, fill=Tipo)) + geom_boxplot() + guides() + ggtitle("AE - Smoker type Box plot")
+
+
+new_order <- with(df, reorder(Tipo,AE, FUN=mean, na.rm=T))
+boxplot(AE~Tipo*new_order, data=df)

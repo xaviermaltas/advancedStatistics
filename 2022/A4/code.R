@@ -82,13 +82,6 @@ ggplot(df, aes(x=AE, y=genero, fill=genero)) + geom_boxplot() + guides() + ggtit
 ggplot(df, aes(x=AE, fill=genero)) + geom_density(alpha=.3) + ggtitle("AE - Gender Density plot ")
 
 
-df.men <- df %>% filter(genero == "M")
-df.female <- df %>% filter(genero == "F")
-summary(df.men)
-summary(df.female)
-
-
-
 ## Capacitat pulmonar i edat
 
 #Scatterplot AE-Age
@@ -135,3 +128,32 @@ ggplot(df, aes(x=AE, y=Tipo, fill=Tipo)) + geom_boxplot() + guides() + ggtitle("
 
 new_order <- with(df, reorder(Tipo,AE, FUN=mean, na.rm=T))
 boxplot(AE~Tipo*new_order, data=df)
+
+#******
+# Interval de confiança de la capacitat pulmonar
+#******
+
+# Men and female new data frames
+df.men <- df %>% filter(genero == "M")
+df.female <- df %>% filter(genero == "F")
+summary(df.men)
+summary(df.female)
+
+#IC function
+IC <- function(x, NC) {
+  n <- length(x)
+  mean <- mean(x)
+  sd <- sd(x)
+  z <- abs(qnorm(((1-NC)/2)))
+  errorst <- sd/sqrt(n)
+  lim_inf <- mean - (z*errorst)
+  lim_sup <- mean + (z*errorst)
+  output <- data.frame(NC, n, mean, sd, z, errorst, lim_inf, lim_sup)
+  return(output)
+}
+
+#Intervals de confinaça
+ic95.AE.men <- IC(df.men$AE, 0.95)
+ic95.AE.men
+ic95.AE.female <- IC(df.female$AE, 0.95)
+ic95.AE.female

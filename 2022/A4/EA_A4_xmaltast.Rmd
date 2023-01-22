@@ -167,8 +167,51 @@ Pel que fa a la capacitat pulmonar dels tres tipus de fumadors restants, veiem q
 ggplot(df, aes(x=AE, y=Tipo, fill=Tipo)) + geom_boxplot() + guides() + ggtitle("AE - Smoker type Box plot")
 ```
 
-
+******
 # Interval de confiança de la capacitat pulmonar
+******
+
+L'interval de confiança ens permet estimar entre quin rang es trobarà un valor desconegut respecte a un paràmetre poblacional amb un determinat nivell de confiança.
+En el cas que ens ocupa, volem estimar el rang que es trobarà la capacitat pulmonar de les dones i els homes per separat amb una confiança del 95%.
+
+```{r, echo=TRUE}
+# Men and female new data frames
+df.men <- df %>% filter(genero == "M")
+df.female <- df %>% filter(genero == "F")
+summary(df.men)
+summary(df.female)
+```
+
+A continuació realitzem una funció anomenada IC que donat un vector de dades (x) i un nivell de confiança (NC), retorni els intervals de confiança de la mostra.
+
+```{r, echo=TRUE}
+#IC function
+IC <- function(x, NC) {
+  n <- length(x)
+  mean <- mean(x)
+  sd <- sd(x)
+  z <- abs(qnorm(((1-NC)/2)))
+  errorst <- sd/sqrt(n)
+  lim_inf <- mean - (z*errorst)
+  lim_sup <- mean + (z*errorst)
+  output <- data.frame(NC, n, mean, sd, z, errorst, lim_inf, lim_sup)
+  return(output)
+}
+
+#Intervals de confinaça
+ic95.AE.men <- IC(df.men$AE, 0.95)
+ic95.AE.men
+ic95.AE.female <- IC(df.female$AE, 0.95)
+ic95.AE.female
+```
+
+L'interval de confiança de la capacitat pulmonar en el cas dels homes és de [1.483438, 1.684087], amb un valor mitjà mostral de 1.583762. Pel que fa al cas de les dones, l'interval de confiança de la capacitat pulmonar és de [1.429231, 1.61733], amb un valor mitjà mostral de 1.52328. La interpretació que podem extreure dels intervals de confiança calculats, és que si repetíssim el mateix procediment amb un nombre elevat de mostres, el 95% dels valors aconseguits de la mostra, es trobaran continguts dins dels intervals de confiança indicats anteriorment. Mitjançant el teorema del límit central, podem assumir que la mitjana mostral segueix una distribució normal, ja que tenim una mostra gran en els dos casos (superior a 30 registres), i podem fer servir la distribució normal per calcular l'interval de confiança.
+Observant els intervals de confiança obtinguts i els valors mitjans mostrals, podem concloure que la diferència en la capacitat pulmonar entre homes i dones és mínima. 
+
+
+
+
+
 
 ```{r, echo=TRUE}
 

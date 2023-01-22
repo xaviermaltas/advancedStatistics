@@ -5,6 +5,7 @@ if (!require('knitr')) install.packages('knitr'); library('knitr')
 if (!require('plyr')) install.packages('plyr'); library('plyr')
 if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
 if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
+if (!require('fitdistrplus')) install.packages('fitdistrplus'); library('fitdistrplus')
 
 
 #******
@@ -157,3 +158,58 @@ ic95.AE.men <- IC(df.men$AE, 0.95)
 ic95.AE.men
 ic95.AE.female <- IC(df.female$AE, 0.95)
 ic95.AE.female
+
+#******
+# Diferències en capacitat pulmonar entre dones i homes
+#******
+
+## Contrast
+
+#Female
+fit.norm.female.AE <- fitdist(df.female$AE, "norm")
+denscomp(fit.norm.female.AE, main= "Histogram and theoretical densities - Female")
+
+#Male
+fit.norm.male.AE <- fitdist(df.female$AE, "norm")
+denscomp(fit.norm.male.AE, main= "Histogram and theoretical densities - Male")
+
+## Càlculs
+
+#tTest function
+tTest <- function( x1, x2, halternativa="twosided", C=95 ){
+  
+  mean1 <- mean(x1)
+  mean2 <- mean(x2)
+  n1 <- length(x1)
+  n2 <- length(x2)
+  sd1 <- sd(x1)
+  sd2 <- sd(x2)
+  alfa <- (1-C/100)
+  
+  #src: https://www.investopedia.com/terms/t/t-test.asp#:~:text=two%20sample%20sets.-,T%2DScore,validity%20of%20the%20null%20hypothesis.
+  degreefreedom <- ( (sd1**2/n1 + sd2**2/n2)**2 ) / ( (sd1**2/n1)**2/(n1-1) + (sd2**2/n2)**2/(n2-1))
+  t <- (mean1-mean2) / (sqrt( sd1**2/n1 + sd2**2/n2 ))
+  
+  if (halternativa=="twosided"){
+    tcritical <- qt( alfa/2, degreefreedom, lower.tail=FALSE ) 
+    pvalue <- pt( abs(t), degreefreedom, lower.tail=FALSE )*2 
+  }
+  else if (halternativa=="<"){
+    tcritical <- qt( alfa, degreefreedom, lower.tail=TRUE )
+    pvalue <- pt( t, degreefreedom, lower.tail=TRUE )
+  }
+  else{ #">"
+    tcritical <- qt( alfa, degreefreedom, lower.tail=FALSE )
+    pvalue <- pt( t, degreefreedom, lower.tail=FALSE )
+  }
+  #Resultat en un named vector
+  output <- c(alfa, mean1, mean2, t, tcritical, pvalue)
+  names(output) <- c("alfa", "mean1", "mean2", "t", "tcritical", "pvalue")
+  return (output)
+}
+
+#tTest compute
+ttest.menFemale.AE.95<-tTest(df.men$AE, df.female$AE, ">", 95); ttest.menFemale.AE.95
+
+#t.test checking
+t.test(df.men$AE, df.female$AE, alternative="greater", conf.level=0.95)

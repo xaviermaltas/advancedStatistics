@@ -255,6 +255,7 @@ t.test(df.noFumadors.AE, df.fumadors.AE, alternative="two.sided", conf.level=0.9
 model.linearRegression <- lm(AE~Tipo+genero+edad,data=df)
 summary(model.linearRegression)
 
+
 #Comprovació de colinealidad
 library(car)
 vif(model.linearRegression)
@@ -304,4 +305,27 @@ colnames(d)<-c("age",smokerTypes.names)
 
 #table construcction
 kable(d, digits=3, caption="Prediccions de la capacitat pulmonar per tipus de fumadors dels 30 als 80 anys")
+
+
+
+#******
+# ANOVA unifactorial
+#******
+
+
+## Càlcul ANOVA
+
+#ANOVA model
+model.anova <- aov(AE~Tipo, df)
+
+model.lm <- lm(AE~Tipo, df)
+anova(model.lm)
+
+## Interpretació
+
+#model's summary
+summary(model.anova)
+#Box plot AE by Tipo
+ggplot(df, aes(x=AE, y=Tipo, fill=Tipo)) + geom_boxplot() + guides() + ggtitle("AE - Smoker type Box plot")
+
 

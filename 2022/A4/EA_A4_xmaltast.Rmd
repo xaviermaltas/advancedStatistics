@@ -146,7 +146,6 @@ Realitzem un data frame amb el nombre de persones en cada tipus de fumador i la 
 
 ```{r, echo=TRUE}
 library(dplyr)
-
 #DF smoker type, n elements and AE mean
 df.byTipoMeanAE <- df %>% group_by(Tipo) %>% summarise(total_count=n(), mean_AE=mean(AE), .groups = 'drop') %>% arrange(desc(mean_AE)) %>% as.data.frame()
 df.byTipoMeanAE
@@ -438,7 +437,59 @@ colnames(d)<-c("age",smokerTypes.names)
 kable(d, digits=3, caption="Prediccions de la capacitat pulmonar per tipus de fumadors dels 30 als 80 anys")
 ```
 
+******
+# ANOVA unifactorial
+******
 
+En aquest apartat realitzarem un anàlisi de la variància per contrastar si existeixen diferències en la capacitat pulmonar i els sis tipus de fumadors/no fumadors. 
+
+## Normalitat
+
+Avalueu si el conjunt de dades compleix les condicions d'aplicació d'ANOVA fent ús del gràfic Normal Q-Q i el test Shapiro-Wilk.
+
+```{r, echo=TRUE}
+# Normal Q-Q
+qqnorm(residuals(model.linearRegression))
+
+#Test Shapiro-Wilk
+shapiro.test(residuals(model.linearRegression))
+```
+
+En el gràfic del Normal Q-Q podem observar que aparentment hi ha compliment de la normalitat. En el cas del test Shapiro-Wilk, el _pvalor_ és molt elevat i, per tant, acceptem la hipòtesi nul·la de normalitat.
+
+## Homocedasticitat: Homogeneïtat de variàncies
+
+## Hipòtesi nul·la i alternativa
+
+$$
+H_0: AE_{NF} = AE_{FP} = AE_{NI} = AE_{FL} = AE_{FM} = AE_{FI}
+$$
+$$
+H_1:  AE_{i} \neq AE_{j} \ \ \ \ per \ algun\  \  i,j
+$$
+
+## Càlcul ANOVA
+
+```{r, echo=TRUE}
+#ANOVA model
+model.anova <- aov(AE~Tipo, df)
+```
+
+## Interpretació
+
+```{r, echo=TRUE}
+#model's summary
+summary(model.anova)
+#Box plot AE by Tipo
+ggplot(df, aes(x=AE, y=Tipo, fill=Tipo)) + geom_boxplot() + guides() + ggtitle("AE - Smoker type Box plot")
+```
+
+Podem observar els següents valors de contrast: _Sum Sq_ = 20.85; _Mean Sq_ = 4.17; _F_ = 17.87; _pvalor_ = 4.026e-15.
+El _pvalor_ és molt petit, inferior al nivell de significança 0.05. La conclusió que podem extreure, és que el factor que estem analitzant és significatiu. Per tant, rebutgem la hipòtesi nul·la d'igualtat de mitjanes entre els diferents grups de fumadors/no fumadors. A la vegada, aquest fet el podem acabar de reafirmar considerant el diagrama de caixes realitzat anteriorment.
+
+## Aprofundint en ANOVA
+
+## Força de la relació
 
 ```{r, echo=TRUE}
 

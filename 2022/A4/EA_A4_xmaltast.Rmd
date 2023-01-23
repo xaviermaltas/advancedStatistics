@@ -472,14 +472,14 @@ $$
 
 ```{r, echo=TRUE}
 #ANOVA model
-model.anova <- aov(AE~Tipo, df)
+model.anova.unifactorial <- aov(AE~Tipo, df)
 ```
 
 ## Interpretació
 
 ```{r, echo=TRUE}
 #model's summary
-summary(model.anova)
+summary(model.anova.unifactorial)
 #Box plot AE by Tipo
 ggplot(df, aes(x=AE, y=Tipo, fill=Tipo)) + geom_boxplot() + guides() + ggtitle("AE - Smoker type Box plot")
 ```
@@ -491,6 +491,76 @@ El _pvalor_ és molt petit, inferior al nivell de significança 0.05. La conclus
 
 ## Força de la relació
 
-```{r, echo=TRUE}
+******
+# Comparacions múltiples
+******
 
+## Test pairwise
+
+Mitjançant el test pairwise, podem realitzar proves de tipus t entre parells. Això ens permet calcular les diferències entre parells de la capacitat pulmonar de cada tipus.
+
+```{r, echo=TRUE}
+## Test pairwise
+pairwise.t.test (df$AE, df$Tipo, p.adjust.method = "none")
 ```
+
+Dels resultats obtinguts podem destacar principalment quatre elements. La diferència de capacitat pulmonar entre fumadors intensius (FI) i fumadors moderats (FM) és de 0.581. La diferència de capacitat pulmonar entre fumadors passius (FP) i fumadors lleugers (FL) és de 0.548. La diferència de capacitat pulmonar entre fumadors que no inhalen (NI) i fumadors lleugers (FL) és de 0.461. I la diferència de capacitat pulmonar entre fumadors passius (FP) i fumadors que no inhalen (NI) és de 0.897.
+
+## Correcció de Bonferroni
+
+A continuació realitzarem el mateix tipus de test aplicant la correcció de Bonferroni. 
+
+```{r, echo=TRUE}
+## Correcció de Bonferroni
+#src: https://statologos.com/correccion-de-bonferroni-en-r/
+pairwise.t.test (df$AE, df$Tipo, p.adjust.method = "bonferroni")
+```
+
+Dels resultats obtinguts del nou test, veiem que els quatre casos anteriors després de la correcció de Bonferroni augmenta substancialment la diferència entre els quatre parells. 
+
+******
+# ANOVA multifactorial
+******
+
+## Anàlisi visual
+
+En primer lloc, generem un nou data frame on s'agrupa segons el tipus de fumador i gènere, obtenim la mitjana de l'AE.
+
+```{r, echo=TRUE}
+#df by tipo-genero AE mean
+df.byTipoGeneroMeanAE <- df %>% group_by(Tipo,genero) %>% summarise(total_count=n(), mean_AE=mean(AE), .groups = 'drop') %>% arrange(desc(mean_AE)) %>% as.data.frame() 
+df.byTipoGeneroMeanAE[order(df.byTipoGeneroMeanAE$mean_AE,decreasing = TRUE),]
+```
+
+En segon lloc, mostrem els valors mitjans del paràmetre AE en funció del tipus de fumador i gènere en un gràfic de barres.
+
+```{r, echo=TRUE}
+#Barplot meanAE value group by type and gender
+ggplot(df.byTipoGeneroMeanAE, aes(x=Tipo, y=mean_AE, fill=genero)) + geom_bar(stat="identity", color="black", position=position_dodge())+theme_minimal()+ggtitle("Barplot mean AE by smoker type and gender")+ylab("AE Mean")+ylim(0, 2.25)
+```
+
+Després d'observar el gràfic realitzat, podem determinar que la relació entre la capacitat pulmonar i el tipus de fumadors és clara. Els valors segons cada un dels tipus de fumador, independentment del gènere, són molt parells. Entrant en el factor del gènere, veiem que en certs casos, la capacitat pulmonar mitjana és superior pels homes i en altres casos per les dones. Com a tal, a diferència de com sí que passa amb el tipus de fumador, no podrem afirmar que hi ha una relació.
+
+
+## ANOVA multifactorial
+
+```{r, echo=TRUE}
+#anova multifactorial model
+model.anova.multifactorial<-lm(AE~Tipo*genero,data=df)
+anova(model.anova.multifactorial)
+```
+
+
+## Interpretació
+
+Amb els resultats obtinguts podem determinar que el factor principal _'Tipo'_ és significatiu. Per altra banda, tant el factor principal _'genero'_ com la interacció entre factors, són molt poc significatius. També podem veure que la capacitat pulmonar en funció del tipus de fumadors, és diferent segons si és una dona o un home.
+
+******
+# Resum tècnic
+******
+
+******
+# Resum executiu
+******
+
+Després d'elaborar una anàlisi completa al conjunt de dades corresponent a la capacitat pulmonar dels fumadors i no fumadors, podem concloure diferents conceptes. En primer lloc, podem afirmar de forma clara que les persones que són fumadores, tenen una capacitat pulmonar inferior respecte els que sí que ho fan. A la vegada, l'edat és un factor que influeix de forma negativa en la capacitat pulmonar, fent que a major edat, la capacitat pulmonar es redueixi. A aquest fet, si li afegim els efectes del fum, aquesta reducció de la capacitat pulmonar s'incrementarà segons la quantitat de cigarretes es consumeixin. Per altra banda, també hem vist que el factor del gènere no és un element diferencial. Hem analitzat el valor mitjà de la capacitat pulmonar en funció del gènere de forma global i tenint en compte cada tipus de fumador de forma independent; després de realitzar totes aquestes proves, no hem trobat cap relació ferma entre la capacitat pulmonar i el gènere de la persona.

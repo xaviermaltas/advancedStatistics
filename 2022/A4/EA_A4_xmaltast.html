@@ -437,6 +437,19 @@ alternativa</a></li>
 <li><a href="#aprofundint-en-anova" id="toc-aprofundint-en-anova"><span class="toc-section-number">7.6</span> Aprofundint en ANOVA</a></li>
 <li><a href="#força-de-la-relació" id="toc-força-de-la-relació"><span class="toc-section-number">7.7</span> Força de la relació</a></li>
 </ul></li>
+<li><a href="#comparacions-múltiples" id="toc-comparacions-múltiples"><span class="toc-section-number">8</span> Comparacions múltiples</a>
+<ul>
+<li><a href="#test-pairwise" id="toc-test-pairwise"><span class="toc-section-number">8.1</span> Test pairwise</a></li>
+<li><a href="#correcció-de-bonferroni" id="toc-correcció-de-bonferroni"><span class="toc-section-number">8.2</span> Correcció de Bonferroni</a></li>
+</ul></li>
+<li><a href="#anova-multifactorial" id="toc-anova-multifactorial"><span class="toc-section-number">9</span> ANOVA multifactorial</a>
+<ul>
+<li><a href="#anàlisi-visual" id="toc-anàlisi-visual"><span class="toc-section-number">9.1</span> Anàlisi visual</a></li>
+<li><a href="#anova-multifactorial-1" id="toc-anova-multifactorial-1"><span class="toc-section-number">9.2</span> ANOVA multifactorial</a></li>
+<li><a href="#interpretació-4" id="toc-interpretació-4"><span class="toc-section-number">9.3</span> Interpretació</a></li>
+</ul></li>
+<li><a href="#resum-tècnic" id="toc-resum-tècnic"><span class="toc-section-number">10</span> Resum tècnic</a></li>
+<li><a href="#resum-executiu" id="toc-resum-executiu"><span class="toc-section-number">11</span> Resum executiu</a></li>
 </ul>
 </div>
 
@@ -1610,12 +1623,12 @@ H_1:  AE_{i} \neq AE_{j} \ \ \ \ per \ algun\  \  i,j
 <div id="càlcul-anova" class="section level2" number="7.4">
 <h2><span class="header-section-number">7.4</span> Càlcul ANOVA</h2>
 <pre class="r"><code>#ANOVA model
-model.anova &lt;- aov(AE~Tipo, df)</code></pre>
+model.anova.unifactorial &lt;- aov(AE~Tipo, df)</code></pre>
 </div>
 <div id="interpretació-3" class="section level2" number="7.5">
 <h2><span class="header-section-number">7.5</span> Interpretació</h2>
 <pre class="r"><code>#model&#39;s summary
-summary(model.anova)</code></pre>
+summary(model.anova.unifactorial)</code></pre>
 <pre><code>##              Df Sum Sq Mean Sq F value   Pr(&gt;F)    
 ## Tipo          5  20.86   4.171   17.88 4.03e-15 ***
 ## Residuals   247  57.63   0.233                     
@@ -1640,7 +1653,156 @@ ANOVA</h2>
 <div id="força-de-la-relació" class="section level2" number="7.7">
 <h2><span class="header-section-number">7.7</span> Força de la
 relació</h2>
+<hr />
 </div>
+</div>
+<div id="comparacions-múltiples" class="section level1" number="8">
+<h1><span class="header-section-number">8</span> Comparacions
+múltiples</h1>
+<hr />
+<div id="test-pairwise" class="section level2" number="8.1">
+<h2><span class="header-section-number">8.1</span> Test pairwise</h2>
+<p>Mitjançant el test pairwise, podem realitzar proves de tipus t entre
+parells. Això ens permet calcular les diferències entre parells de la
+capacitat pulmonar de cada tipus.</p>
+<pre class="r"><code>## Test pairwise
+pairwise.t.test (df$AE, df$Tipo, p.adjust.method = &quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  df$AE and df$Tipo 
+## 
+##    FI      FL      FM      FP      NF     
+## FL 0.00165 -       -       -       -      
+## FM 0.58175 0.00027 -       -       -      
+## FP 0.00021 0.54864 2.9e-05 -       -      
+## NF 5.4e-13 2.6e-05 2.6e-14 0.00035 -      
+## NI 0.00011 0.46122 1.3e-05 0.89733 0.00048
+## 
+## P value adjustment method: none</code></pre>
+<p>Dels resultats obtinguts podem destacar principalment quatre
+elements. La diferència de capacitat pulmonar entre fumadors intensius
+(FI) i fumadors moderats (FM) és de 0.581. La diferència de capacitat
+pulmonar entre fumadors passius (FP) i fumadors lleugers (FL) és de
+0.548. La diferència de capacitat pulmonar entre fumadors que no inhalen
+(NI) i fumadors lleugers (FL) és de 0.461. I la diferència de capacitat
+pulmonar entre fumadors passius (FP) i fumadors que no inhalen (NI) és
+de 0.897.</p>
+</div>
+<div id="correcció-de-bonferroni" class="section level2" number="8.2">
+<h2><span class="header-section-number">8.2</span> Correcció de
+Bonferroni</h2>
+<p>A continuació realitzarem el mateix tipus de test aplicant la
+correcció de Bonferroni.</p>
+<pre class="r"><code>## Correcció de Bonferroni
+#src: https://statologos.com/correccion-de-bonferroni-en-r/
+pairwise.t.test (df$AE, df$Tipo, p.adjust.method = &quot;bonferroni&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  df$AE and df$Tipo 
+## 
+##    FI      FL      FM      FP      NF     
+## FL 0.02477 -       -       -       -      
+## FM 1.00000 0.00409 -       -       -      
+## FP 0.00315 1.00000 0.00043 -       -      
+## NF 8.1e-12 0.00039 4.0e-13 0.00522 -      
+## NI 0.00160 1.00000 0.00020 1.00000 0.00717
+## 
+## P value adjustment method: bonferroni</code></pre>
+<p>Dels resultats obtinguts del nou test, veiem que els quatre casos
+anteriors després de la correcció de Bonferroni augmenta substancialment
+la diferència entre els quatre parells.</p>
+<hr />
+</div>
+</div>
+<div id="anova-multifactorial" class="section level1" number="9">
+<h1><span class="header-section-number">9</span> ANOVA
+multifactorial</h1>
+<hr />
+<div id="anàlisi-visual" class="section level2" number="9.1">
+<h2><span class="header-section-number">9.1</span> Anàlisi visual</h2>
+<p>En primer lloc, generem un nou data frame on s’agrupa segons el tipus
+de fumador i gènere, obtenim la mitjana de l’AE.</p>
+<pre class="r"><code>#df by tipo-genero AE mean
+df.byTipoGeneroMeanAE &lt;- df %&gt;% group_by(Tipo,genero) %&gt;% summarise(total_count=n(), mean_AE=mean(AE), .groups = &#39;drop&#39;) %&gt;% arrange(desc(mean_AE)) %&gt;% as.data.frame() 
+df.byTipoGeneroMeanAE[order(df.byTipoGeneroMeanAE$mean_AE,decreasing = TRUE),]</code></pre>
+<pre><code>##    Tipo genero total_count  mean_AE
+## 1    NF      M          21 2.074773
+## 2    NF      F          29 1.933138
+## 3    FL      M          13 1.650977
+## 4    NI      M          19 1.642543
+## 5    FP      F          18 1.628993
+## 6    NI      F          23 1.628288
+## 7    FP      M          22 1.614373
+## 8    FL      F          28 1.512600
+## 9    FI      F          24 1.273318
+## 10   FM      M          17 1.266695
+## 11   FI      M          17 1.137577
+## 12   FM      F          22 1.073019</code></pre>
+<p>En segon lloc, mostrem els valors mitjans del paràmetre AE en funció
+del tipus de fumador i gènere en un gràfic de barres.</p>
+<pre class="r"><code>#Barplot meanAE value group by type and gender
+ggplot(df.byTipoGeneroMeanAE, aes(x=Tipo, y=mean_AE, fill=genero)) + geom_bar(stat=&quot;identity&quot;, color=&quot;black&quot;, position=position_dodge())+theme_minimal()+ggtitle(&quot;Barplot mean AE by smoker type and gender&quot;)+ylab(&quot;AE Mean&quot;)+ylim(0, 2.25)</code></pre>
+<p><img src="data:image/png;base64,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v/Tz9uLNmLK9FIktroTRddYloEIGCujZw9+fTq/8LNf9T7a49uwZXWddAirE276CLa6E0XXWJaBCvO0r2OJKGF1nXQIqxNu+gi2uhNF11iWgQrztK9jiShhdZ10CKsTbvoItroTRddYloEK87SvY4koYXWddAirE276CLa6E0XXWJaBCvO0r2OJKGF1nXQIqxNu+gi2uhNF11iWgQrztK9jiShhdZ10CKsTbvoItroTRddYloEK87SvY4koYXWddAirE276CLa6E0XXWJaBCvO0r2OJKGF1nXQIqxNu+gi2uhNF11iWgQrztK9jiShhdZ10CKsTbvoItroTRddYloEK87SvY4koYXWddAirE276CLa6E0XXWJaBCvO0r2OJKGF1nXQIqxNu+gi2uhNF11iWgQrztK9jiShhdZ10CKsTbvoItroTRddYloEK87SvY4koYXWddAirE276CLa6E0XXWJaBCvO0r2OJKGF1nXQIqxNu+gi2uhNF11iWgQrztK9jiShhdZ10CKsTbvoItroTRddYloEK87SvY4koYXWddAirE276CLa6E0XXWJaBCvO0r2OJKGF1nXQIqxNu+gi2uhNF11iWgQrztK9jiShhdZ10CKsTbvoItroTRddYloEK87SvY4koYXWddAirE276CLa6E0XXWJaBCvO0r2OJKGF1nXQIqxNu+gi2uhNF11iWgQrztK9jiShhdZ10CKsTbvoItroTRddYloEK87SvY4koYXWddAirE276CLa6E0XXWJaBCvO0r2OJKGF1nXQIqxNu+gi2uhNF11iWgQrztK9jiShhdZ10CKsTbvoItroTRddYloEK87SvY4koYXWddAirE276CLa6E0XXWJaBCvO0r2OJKGF1nXQIqxNu+gi2uhNF11iWgQrztK9jiShhdZ10CKsTbvoItroTRddYloEK87SvY4koYXWddAirE276CLa6E0XXWJaBCttn/1ZLfjKbTG7a4EkbXWZeACtlkf/+9ScUTn43q1Ae2uBJG11n3wgT0y9cnk6Pnb50sg3X/vePZJ5771fyD716dvHD6yfcmkyd/cmvx/Y2vn747efPL12Zf/qD9la1ssJ8djYDWcdszw8LoOutekIDOCljW6r1FsE6W/Xq++GiWtN95rfz4Utmz5tdnP/6jZeyWXzn66c6jbrCf3cKlH//pkj+71f1d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" width="672" /></p>
+<p>Després d’observar el gràfic realitzat, podem determinar que la
+relació entre la capacitat pulmonar i el tipus de fumadors és clara. Els
+valors segons cada un dels tipus de fumador, independentment del gènere,
+són molt parells. Entrant en el factor del gènere, veiem que en certs
+casos, la capacitat pulmonar mitjana és superior pels homes i en altres
+casos per les dones. Com a tal, a diferència de com sí que passa amb el
+tipus de fumador, no podrem afirmar que hi ha una relació.</p>
+</div>
+<div id="anova-multifactorial-1" class="section level2" number="9.2">
+<h2><span class="header-section-number">9.2</span> ANOVA
+multifactorial</h2>
+<pre class="r"><code>#anova multifactorial model
+model.anova.multifactorial&lt;-lm(AE~Tipo*genero,data=df)
+anova(model.anova.multifactorial)</code></pre>
+<pre><code>## Analysis of Variance Table
+## 
+## Response: AE
+##              Df Sum Sq Mean Sq F value    Pr(&gt;F)    
+## Tipo          5 20.856  4.1712 17.7392 5.809e-15 ***
+## genero        1  0.197  0.1970  0.8378    0.3610    
+## Tipo:genero   5  0.765  0.1529  0.6504    0.6615    
+## Residuals   241 56.668  0.2351                      
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+</div>
+<div id="interpretació-4" class="section level2" number="9.3">
+<h2><span class="header-section-number">9.3</span> Interpretació</h2>
+<p>Amb els resultats obtinguts podem determinar que el factor principal
+<em>‘Tipo’</em> és significatiu. Per altra banda, tant el factor
+principal <em>‘genero’</em> com la interacció entre factors, són molt
+poc significatius. També podem veure que la capacitat pulmonar en funció
+del tipus de fumadors, és diferent segons si és una dona o un home.</p>
+<hr />
+</div>
+</div>
+<div id="resum-tècnic" class="section level1" number="10">
+<h1><span class="header-section-number">10</span> Resum tècnic</h1>
+<hr />
+<hr />
+</div>
+<div id="resum-executiu" class="section level1" number="11">
+<h1><span class="header-section-number">11</span> Resum executiu</h1>
+<hr />
+<p>Després d’elaborar una anàlisi completa al conjunt de dades
+corresponent a la capacitat pulmonar dels fumadors i no fumadors, podem
+concloure diferents conceptes. En primer lloc, podem afirmar de forma
+clara que les persones que són fumadores, tenen una capacitat pulmonar
+inferior respecte els que sí que ho fan. A la vegada, l’edat és un
+factor que influeix de forma negativa en la capacitat pulmonar, fent que
+a major edat, la capacitat pulmonar es redueixi. A aquest fet, si li
+afegim els efectes del fum, aquesta reducció de la capacitat pulmonar
+s’incrementarà segons la quantitat de cigarretes es consumeixin. Per
+altra banda, també hem vist que el factor del gènere no és un element
+diferencial. Hem analitzat el valor mitjà de la capacitat pulmonar en
+funció del gènere de forma global i tenint en compte cada tipus de
+fumador de forma independent; després de realitzar totes aquestes
+proves, no hem trobat cap relació ferma entre la capacitat pulmonar i el
+gènere de la persona.</p>
 </div>
 
 

@@ -316,7 +316,7 @@ kable(d, digits=3, caption="Prediccions de la capacitat pulmonar per tipus de fu
 ## Càlcul ANOVA
 
 #ANOVA model
-model.anova <- aov(AE~Tipo, df)
+model.anova.unifactorial <- aov(AE~Tipo, df)
 
 model.lm <- lm(AE~Tipo, df)
 anova(model.lm)
@@ -324,8 +324,40 @@ anova(model.lm)
 ## Interpretació
 
 #model's summary
-summary(model.anova)
+summary(model.anova.unifactorial)
 #Box plot AE by Tipo
 ggplot(df, aes(x=AE, y=Tipo, fill=Tipo)) + geom_boxplot() + guides() + ggtitle("AE - Smoker type Box plot")
 
 
+#******
+# Comparacions múltiples
+#******
+
+## Test pairwise
+pairwise.t.test (df$AE, df$Tipo, p.adjust.method = "none")
+
+## Correcció de Bonferroni
+#src: https://statologos.com/correccion-de-bonferroni-en-r/
+pairwise.t.test (df$AE, df$Tipo, p.adjust.method = "bonferroni")
+
+
+#******
+# ANOVA multifactorial
+#******
+  
+## Anàlisi visual
+
+#df by tipo-genero AE mean
+df.byTipoGeneroMeanAE <- df %>% group_by(Tipo,genero) %>% summarise(total_count=n(), mean_AE=mean(AE), .groups = 'drop') %>% arrange(desc(mean_AE)) %>% as.data.frame() 
+df.byTipoGeneroMeanAE[order(df.byTipoGeneroMeanAE$mean_AE,decreasing = TRUE),]
+
+#Barplot meanAE value group by type and gender
+ggplot(df.byTipoGeneroMeanAE, aes(x=Tipo, y=mean_AE, fill=genero)) + geom_bar(stat="identity", color="black", position=position_dodge())+theme_minimal()+ggtitle("Barplot mean AE by smoker type and gender")+ylab("AE Mean")+ylim(0, 2.25)
+
+
+## ANOVA multifactorial
+#anova multifactorial model
+model.anova.multifactorial<-lm(AE~Tipo*genero,data=df)
+anova(model.anova.multifactorial)
+
+       

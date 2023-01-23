@@ -6,6 +6,7 @@ if (!require('plyr')) install.packages('plyr'); library('plyr')
 if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
 if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
 if (!require('fitdistrplus')) install.packages('fitdistrplus'); library('fitdistrplus')
+if (!require('car')) install.packages('car'); library('car')
 
 
 #******
@@ -242,3 +243,65 @@ ttest.fumadorsNoFumadors.AE.95 <- tTest.bilateral(df.noFumadors.AE, df.fumadors.
 
 #t.test checking
 t.test(df.noFumadors.AE, df.fumadors.AE, alternative="two.sided", conf.level=0.95, var.equal = TRUE)
+
+
+#******
+# Anàlisi de la regressió lineal
+#******
+
+## Càlcul
+
+#model
+model.linearRegression <- lm(AE~Tipo+genero+edad,data=df)
+summary(model.linearRegression)
+
+#Comprovació de colinealidad
+library(car)
+vif(model.linearRegression)
+
+
+## Interpretació
+
+#model without 'genero'
+model.linearRegression <- lm(AE~Tipo+edad,data=df)
+#model's summary without 'genero'
+summary(model.linearRegression)
+
+
+## Bondat d'ajust
+
+#valors residus
+residus <- rstandard(model.linearRegression)
+#valors ajustats
+fitterValues <- fitted(model.linearRegression)
+
+#plot fitterValues and qqnorm
+par(mfrow=c(1,2))
+plot(fitterValues, residus)
+qqnorm(residus)
+
+## Predicció
+
+#age and smokerTypes sequences
+ageRange <- seq(30, 80, by=1)
+smokerTypes.names <- c("NF","FP","NI","FL","FM","FI")
+d<-data.frame(NF=c(), FP=c(), NI=c(), FL=c(), FM=c(), FI=c())
+
+#loop per each type-age
+for(i in ageRange){
+  v <- numeric()
+  v <- append(v,i)
+  for(j in smokerTypes.names){
+    newdata = data.frame(Tipo=j, edad=i, genero="M")
+    predictedValue <- predict(model.linearRegression, newdata)
+    v<-append(v,predictedValue)
+  }
+  #adding to df
+  d<-structure(rbind(d,v), .Names = names(smokerTypes.names))
+}
+#colnames
+colnames(d)<-c("age",smokerTypes.names)
+
+#table construcction
+kable(d, digits=3, caption="Prediccions de la capacitat pulmonar per tipus de fumadors dels 30 als 80 anys")
+

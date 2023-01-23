@@ -24,6 +24,7 @@ if (!require('plyr')) install.packages('plyr'); library('plyr')
 if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
 if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
 if (!require('fitdistrplus')) install.packages('fitdistrplus'); library('fitdistrplus')
+if (!require('car')) install.packages('car'); library('car')
 ```
 
 
@@ -356,6 +357,88 @@ t.test(df.noFumadors.AE, df.fumadors.AE, alternative="two.sided", conf.level=0.9
 ## Interpretació
 
 Els resultats dels testos ens indiquen que el _pvalor_ és inferior al nivell de significació (0.05). A la vegada, el valor crític i el valor observat són (1.969460, 6.329761) respectivament. El valor observat és notablement superior al valor crític, per tant, fora de la zona d'acceptació de la hipòtesi nul·la. Així doncs, podem rebutjar la hipòtesi nul·la en favor de la hipòtesi alternativa i podem afirmar que la capacitat mitjana pulmonar dels no fumadors és superior a la dels fumadors.
+
+
+******
+# Anàlisi de la regressió lineal
+******
+
+En aquest apartat, se'ns demana que treballem amb un model de regressió lineal per tal d'investigar la relació del paràmetre _'AE'_ i la resta de les variables del conjunt de dades.
+
+## Càlcul
+
+Construïm el model de regressió lineal.
+
+```{r, echo=TRUE}
+#model
+model.linearRegression <- lm(AE~Tipo+genero+edad,data=df)
+```
+
+## Interpretació
+
+```{r, echo=TRUE}
+#model's summary 
+summary(model.linearRegression)
+```
+Observant el resum del model, el valor corresponent al _'Multiple R-squared'_, ens indica que el model explica quasi un 60% de la variació de la capacitat pulmonar de les persones. És un valor relativament alt, així doncs el model seria prou encertat per a predir la capacitat pulmonar de les persones.
+Si ens fixem en el _pvalue_ de totes les variables, podem veure que la variable explicativa _'generoM'_ no sembla ser un factor significatiu pel nostre model. En el cas del _pvalue_ de la variable explicativa _'TipoFM'_, podem veure que tampoc seria significativa, tot i que, aquest valor és un dels sis diferents que pot prendre el paràmetre _'Tipo'_. En el cas dels altres cinc valors, veiem que el _pvalue_ és molt baix, i com a tal significativitat.
+La variable _edad_ té una correlació negativa amb la capacitat pulmonar, indicant que com més gran sigui el valor d'aquesta variable, menor serà la capacitat pulmonar de la persona. El coeficient estimat _'TipoNF'_ és amb diferencia el més gran respecte els altres corresponents a la variable _'Tipo'_, indicant que si una persona és no fumadora, major serà la seva capacitat pulmonar. 
+Com a conclusió d'aquests valors, podem plantejar que el paràmetre _'Tipo'_ pot ser eliminat del model sense cap mena de problema, donat el seu baix nivell de significancia. Aquest fet ho podem veure en els factors analitzats anteriorment havent eliminar la variable del model.
+
+```{r, echo=TRUE}
+#model without 'genero'
+model.linearRegression <- lm(AE~Tipo+edad,data=df)
+#model's summary without 'genero'
+summary(model.linearRegression)
+```
+
+## Bondat d'ajust
+
+Realitzarem dos gràfics per avaluar la qualitat del model. En primer lloc, mitjançant el gràfic dels valors ajustats enfront dels residus, podrem observar si la variància és constant. Per altra banda, mitjançant el gràfic quantil-quantil per comparar els residus del model amb els valors d’una variable que es distribueix de forma normal(QQ plot).
+
+```{r, echo=TRUE}
+#valors residus
+residus <- rstandard(model.linearRegression)
+#valors ajustats
+fitterValues <- fitted(model.linearRegression)
+
+#plot fitterValues and qqnorm
+par(mfrow=c(1,2))
+plot(fitterValues, residus)
+qqnorm(residus)
+```
+
+En el primer gràfic s'observar un patró de dispersió bastant regular, com a tal podem determinar que tenim una variança constant. D’altra banda el QQ plot, mostra que les dades s’ajusten bé a una distribució de tipus normal.
+
+
+## Predicció
+
+```{r, echo=TRUE}
+#age and smokerTypes sequences
+ageRange <- seq(30, 80, by=1)
+smokerTypes.names <- c("NF","FP","NI","FL","FM","FI")
+d<-data.frame(NF=c(), FP=c(), NI=c(), FL=c(), FM=c(), FI=c())
+
+#loop per each type-age
+for(i in ageRange){
+  v <- numeric()
+  v <- append(v,i)
+  for(j in smokerTypes.names){
+    newdata = data.frame(Tipo=j, edad=i, genero="M")
+    predictedValue <- predict(model.linearRegression, newdata)
+    v<-append(v,predictedValue)
+  }
+  #adding to df
+  d<-structure(rbind(d,v), .Names = names(smokerTypes.names))
+}
+#colnames
+colnames(d)<-c("age",smokerTypes.names)
+
+#table construcction
+kable(d, digits=3, caption="Prediccions de la capacitat pulmonar per tipus de fumadors dels 30 als 80 anys")
+```
+
+
 
 ```{r, echo=TRUE}
 

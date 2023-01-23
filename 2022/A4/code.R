@@ -173,10 +173,13 @@ denscomp(fit.norm.female.AE, main= "Histogram and theoretical densities - Female
 fit.norm.male.AE <- fitdist(df.female$AE, "norm")
 denscomp(fit.norm.male.AE, main= "Histogram and theoretical densities - Male")
 
+#FTest
+var.test(df.men$AE, df.female$AE)
+
 ## Càlculs
 
-#tTest function
-tTest <- function( x1, x2, halternativa="twosided", C=95 ){
+#tTest bilateral function
+tTest.bilateral <- function( x1, x2, C=95, var.equal=FALSE ){
   
   mean1 <- mean(x1)
   mean2 <- mean(x2)
@@ -187,29 +190,55 @@ tTest <- function( x1, x2, halternativa="twosided", C=95 ){
   alfa <- (1-C/100)
   
   #src: https://www.investopedia.com/terms/t/t-test.asp#:~:text=two%20sample%20sets.-,T%2DScore,validity%20of%20the%20null%20hypothesis.
-  degreefreedom <- ( (sd1**2/n1 + sd2**2/n2)**2 ) / ( (sd1**2/n1)**2/(n1-1) + (sd2**2/n2)**2/(n2-1))
-  t <- (mean1-mean2) / (sqrt( sd1**2/n1 + sd2**2/n2 ))
-  
-  if (halternativa=="twosided"){
-    tcritical <- qt( alfa/2, degreefreedom, lower.tail=FALSE ) 
-    pvalue <- pt( abs(t), degreefreedom, lower.tail=FALSE )*2 
+  #equal variance case
+  if (var.equal == TRUE){
+    t <- (mean1-mean2) / ((sqrt( ( (n1-1)*sd1**2 + (n2-1)*sd2**2 ) / (n1+n2-2) )) * sqrt(1/n1+1/n2) )
+    df <- n1+n2-2
   }
-  else if (halternativa=="<"){
-    tcritical <- qt( alfa, degreefreedom, lower.tail=TRUE )
-    pvalue <- pt( t, degreefreedom, lower.tail=TRUE )
+  #different variance case
+  else {
+    t <- (mean1-mean2) / sqrt( sd1**2/n1 + sd2**2/n2 )
+    df <- ( (sd1**2/n1 + sd2**2/n2)**2 ) / ( (sd1**2/n1)**2/(n1-1) + (sd2**2/n2)**2/(n2-1))
   }
-  else{ #">"
-    tcritical <- qt( alfa, degreefreedom, lower.tail=FALSE )
-    pvalue <- pt( t, degreefreedom, lower.tail=FALSE )
-  }
-  #Resultat en un named vector
-  output <- c(alfa, mean1, mean2, t, tcritical, pvalue)
-  names(output) <- c("alfa", "mean1", "mean2", "t", "tcritical", "pvalue")
+  tcritical <- qt( alfa/2, df, lower.tail=FALSE ) #two sided
+  pvalue <- pt( abs(t), df, lower.tail=FALSE )*2 #two sided
+  output <- c(alfa,mean1, mean2, t,tcritical,pvalue,df)
+  names(output) <- c("alfa","mean1","mean2","t","tcritical","pvalue","df")
   return (output)
 }
 
 #tTest compute
-ttest.menFemale.AE.95<-tTest(df.men$AE, df.female$AE, ">", 95); ttest.menFemale.AE.95
+ttest.menFemale.AE.95 <- tTest.bilateral(df.men$AE, df.female$AE, C=95, var.equal=TRUE); ttest.menFemale.AE.95
 
 #t.test checking
-t.test(df.men$AE, df.female$AE, alternative="greater", conf.level=0.95)
+t.test(df.men$AE, df.female$AE, alternative="two.sided", conf.level=0.95, var.equal = TRUE)
+
+
+#******
+# Diferències en la capacitat pulmonar entre Fumadors i No Fumador
+#******
+
+# Contrast
+
+noFumadors.names <- c("NF","FP")
+fumadors.names <- c("NI","FL","FM","FI")
+
+df.noFumadors <- filter(df, Tipo %in% noFumadors.names)
+df.fumadors <- filter(df, Tipo %in% fumadors.names)
+
+var.test(df.noFumadors$AE, df.fumadors$AE)
+
+
+
+## Preparació de les dades
+#AE data frames
+df.noFumadors.AE <- df.noFumadors$AE
+df.fumadors.AE <- df.fumadors$AE
+
+## Càlculs
+
+#tTest compute
+ttest.fumadorsNoFumadors.AE.95 <- tTest.bilateral(df.noFumadors.AE, df.fumadors.AE, C=95, var.equal=TRUE); ttest.fumadorsNoFumadors.AE.95
+
+#t.test checking
+t.test(df.noFumadors.AE, df.fumadors.AE, alternative="two.sided", conf.level=0.95, var.equal = TRUE)
